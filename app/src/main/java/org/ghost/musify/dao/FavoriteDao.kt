@@ -7,7 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import org.ghost.musify.entity.FavoriteSongEntity
-import org.ghost.musify.entity.SongEntity
+import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
 
@@ -29,7 +29,7 @@ interface FavoriteDao {
         query: String,
         sortBy: SortBy,
         sortOrder: SortOrder
-    ): PagingSource<Int, SongEntity> {
+    ): PagingSource<Int, SongWithAlbumAndArtist> {
         return if (sortOrder == SortOrder.ASCENDING) {
             getFavoriteSongsAsc(query, sortBy.value)
         } else {
@@ -49,7 +49,10 @@ interface FavoriteDao {
             CASE WHEN :sortBy = 'duration' THEN s.duration END ASC
     """
     )
-    fun getFavoriteSongsAsc(query: String, sortBy: String): PagingSource<Int, SongEntity>
+    fun getFavoriteSongsAsc(
+        query: String,
+        sortBy: String
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 
     @Transaction
     @Query(
@@ -63,5 +66,8 @@ interface FavoriteDao {
             CASE WHEN :sortBy = 'duration' THEN s.duration END DESC
     """
     )
-    fun getFavoriteSongsDesc(query: String, sortBy: String): PagingSource<Int, SongEntity>
+    fun getFavoriteSongsDesc(
+        query: String,
+        sortBy: String
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 }

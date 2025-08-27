@@ -11,8 +11,8 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import org.ghost.musify.entity.PlaylistEntity
 import org.ghost.musify.entity.PlaylistSongCrossRef
-import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.relation.PlaylistWithSongs
+import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
 
@@ -25,8 +25,22 @@ interface PlaylistDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun createPlaylist(playlist: PlaylistEntity): Long
 
-    @Query("SELECT * FROM playlists ORDER BY playlist_name ASC")
-    fun getAllPlaylists(): PagingSource<Int, PlaylistEntity>
+    @Query(
+        """
+        SELECT * FROM playlists
+        WHERE playlist_name LIKE '%' || :query || '%'
+        ORDER BY
+            CASE WHEN :sortBy = 'NAME' AND :sortOrder = 'ASCENDING' THEN playlist_name END ASC,
+            CASE WHEN :sortBy = 'NAME' AND :sortOrder = 'DESCENDING' THEN playlist_name END DESC,
+            CASE WHEN :sortBy = 'DATE_CREATED' AND :sortOrder = 'ASCENDING' THEN created_at END ASC,
+            CASE WHEN :sortBy = 'DATE_CREATED' AND :sortOrder = 'DESCENDING' THEN created_at END DESC
+    """
+    )
+    fun getAllPlaylists(
+        query: String,
+        sortBy: SortBy,
+        sortOrder: SortOrder
+    ): PagingSource<Int, PlaylistEntity>
 
     @Update
     suspend fun renamePlaylist(playlist: PlaylistEntity)
@@ -52,7 +66,7 @@ interface PlaylistDao {
         query: String,
         sortBy: SortBy,
         sortOrder: SortOrder
-    ): PagingSource<Int, SongEntity> {
+    ): PagingSource<Int, SongWithAlbumAndArtist> {
         return if (sortOrder == SortOrder.ASCENDING) {
             getSongsInPlaylistAsc(playlistId, query, sortBy.value)
         } else {
@@ -77,7 +91,7 @@ interface PlaylistDao {
         playlistId: Long,
         query: String,
         sortBy: String
-    ): PagingSource<Int, SongEntity>
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 
 
     @Transaction
@@ -97,7 +111,13 @@ interface PlaylistDao {
         playlistId: Long,
         query: String,
         sortBy: String
-    ): PagingSource<Int, SongEntity>
+    ): PagingSource<Int, SongWithAlbumAndArtist>
+
+    @Query("SELECT * FROM playlists WHERE id = :playlistId limit 1")
+    fun getPlaylistById(playlistId: Long): Flow<PlaylistEntity?>
+
+    @Query("SELECT COUNT(*) FROM playlist_song_join WHERE playlist_id = :playlistId")
+    fun getPlaylistSongsCount(playlistId: Long): Flow<Int>
 
 
 }

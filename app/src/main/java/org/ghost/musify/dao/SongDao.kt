@@ -5,9 +5,14 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
+import org.ghost.musify.entity.AlbumEntity
+import org.ghost.musify.entity.ArtistEntity
 import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.relation.SongSyncInfo
+import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
 
@@ -21,47 +26,121 @@ interface SongDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSongs(songs: List<SongEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSong(song: SongEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAlbum(album: AlbumEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertArtists(artist: List<ArtistEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertArtist(artist: ArtistEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAlbums(albums: List<AlbumEntity>)
+
+    @Transaction
+    suspend fun insertSongWithAlbumAndArtist(
+        song: SongEntity,
+        album: AlbumEntity,
+        artist: ArtistEntity
+    ) {
+        insertArtist(artist)
+        insertAlbum(album)
+        insertSong(song)
+    }
+
+    @Transaction
+    suspend fun insertSongsWithAlbumAndArtist(
+        songs: List<SongEntity>,
+        albums: List<AlbumEntity>,
+        artists: List<ArtistEntity>
+    ) {
+        insertArtists(artists)
+        insertAlbums(albums)
+        insertSongs(songs)
+    }
+
+
     @Update
     suspend fun updateSong(song: SongEntity)
 
     // --- Read (with Paging Support) ---
     fun getAllSongs(
         query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
         sortBy: SortBy,
         sortOrder: SortOrder
-    ): PagingSource<Int, SongEntity> {
+    ): PagingSource<Int, SongWithAlbumAndArtist> {
         return if (sortOrder == SortOrder.ASCENDING) {
-            getSongsAsc(query, sortBy.value)
+            getSongsAsc(query, artist, album, artistId, albumId, sortBy.value)
         } else {
-            getSongsDesc(query, sortBy.value)
+            getSongsDesc(query, artist, album, artistId, albumId, sortBy.value)
         }
     }
 
+    @Transaction
     @Query(
         """
-        SELECT * FROM songs WHERE title LIKE '%' || :query || '%'
+        SELECT songs.* FROM songs
+            INNER JOIN artists ON songs.artist_id = artists.id
+            INNER JOIN albums ON songs.album_id = albums.id
+            WHERE
+                songs.title LIKE '%' || :query || '%'
+                AND artists.name LIKE '%' || :artist || '%'
+                AND albums.title LIKE '%' || :album || '%'
+                AND (:artistId IS NULL OR songs.artist_id = :artistId)
+                AND (:albumId IS NULL OR songs.album_id = :albumId)
         ORDER BY
-            CASE WHEN :sortBy = 'title' THEN title END ASC,
-            CASE WHEN :sortBy = 'duration' THEN duration END ASC,
-            CASE WHEN :sortBy = 'year' THEN year END ASC,
-            CASE WHEN :sortBy = 'date_added' THEN date_added END ASC,
-            CASE WHEN :sortBy = 'date_modified' THEN date_modified END ASC
+            CASE WHEN :sortBy = 'title' THEN songs.title END ASC,
+            CASE WHEN :sortBy = 'duration' THEN songs.duration END ASC,
+            CASE WHEN :sortBy = 'year' THEN songs.year END ASC,
+            CASE WHEN :sortBy = 'date_added' THEN songs.date_added END ASC,
+            CASE WHEN :sortBy = 'date_modified' THEN songs.date_modified END ASC
     """
     )
-    fun getSongsAsc(query: String, sortBy: String): PagingSource<Int, SongEntity>
+    fun getSongsAsc(
+        query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
+        sortBy: String
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 
+    @Transaction
     @Query(
         """
-        SELECT * FROM songs WHERE title LIKE '%' || :query || '%'
-        ORDER BY
-            CASE WHEN :sortBy = 'title' THEN title END DESC,
-            CASE WHEN :sortBy = 'duration' THEN duration END DESC,
-            CASE WHEN :sortBy = 'year' THEN year END DESC,
-            CASE WHEN :sortBy = 'date_added' THEN date_added END DESC,
-            CASE WHEN :sortBy = 'date_modified' THEN date_modified END DESC
+            SELECT songs.* FROM songs
+            INNER JOIN artists ON songs.artist_id = artists.id
+            INNER JOIN albums ON songs.album_id = albums.id
+            WHERE
+                songs.title LIKE '%' || :query || '%'
+                AND artists.name LIKE '%' || :artist || '%'
+                AND albums.title LIKE '%' || :album || '%'
+                AND (:artistId IS NULL OR songs.artist_id = :artistId)
+                AND (:albumId IS NULL OR songs.album_id = :albumId)
+            ORDER BY
+                CASE WHEN :sortBy = 'title' THEN songs.title END DESC,
+                CASE WHEN :sortBy = 'duration' THEN songs.duration END DESC,
+                CASE WHEN :sortBy = 'year' THEN songs.year END DESC,
+                CASE WHEN :sortBy = 'date_added' THEN songs.date_added END DESC,
+                CASE WHEN :sortBy = 'date_modified' THEN songs.date_modified END DESC
     """
     )
-    fun getSongsDesc(query: String, sortBy: String): PagingSource<Int, SongEntity>
+    fun getSongsDesc(
+        query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
+        sortBy: String
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 
     @Query("SELECT * FROM songs WHERE id = :songId")
     suspend fun getSongById(songId: Long): SongEntity?
@@ -69,8 +148,8 @@ interface SongDao {
     @Query("SELECT * FROM songs WHERE album_id = :albumId ORDER BY track_number ASC")
     fun getSongsByAlbumId(albumId: Long): PagingSource<Int, SongEntity>
 
-    @Query("SELECT * FROM songs WHERE artist = :artistName ORDER BY title ASC")
-    fun getSongsByArtist(artistName: String): PagingSource<Int, SongEntity>
+    @Query("SELECT * FROM songs WHERE artist_id = :artistId ORDER BY title ASC")
+    fun getSongsByArtist(artistId: Long): PagingSource<Int, SongEntity>
 
     // --- Delete ---
     @Query("DELETE FROM songs WHERE id IN (:songIds)")
@@ -79,12 +158,57 @@ interface SongDao {
     @Query("DELETE FROM songs")
     suspend fun clearAllSongs(): Int
 
+    @Query(
+        """
+        SELECT * FROM albums
+        WHERE title LIKE '%' || :query || '%'
+        ORDER BY 
+            CASE WHEN :sortOrder = 'ASCENDING' THEN title END ASC,
+            CASE WHEN :sortOrder = 'DESCENDING' THEN title END DESC
+    """
+    )
+    fun getAllAlbums(
+        query: String,
+        sortOrder: SortOrder
+    ): PagingSource<Int, AlbumEntity>
+
+    @Query(
+        """
+        SELECT * FROM artists
+        WHERE name LIKE '%' || :query || '%'
+        ORDER BY
+            CASE WHEN :sortOrder = 'ASCENDING' THEN name END ASC,
+            CASE WHEN :sortOrder = 'DESCENDING' THEN name END DESC
+    """
+    )
+    fun getAllArtists(
+        query: String,
+        sortOrder: SortOrder // Assuming this is an enum with ASCENDING, DESCENDING
+    ): PagingSource<Int, ArtistEntity>
+
+
     /**
      * Efficiently fetches only the ID and modification timestamp for all songs
      * from the local database.
      */
     @Query("SELECT id, date_modified FROM songs")
     suspend fun getSongSyncInfo(): List<SongSyncInfo>
+
+
+    @Query("SELECT * FROM albums WHERE id = :albumId limit 1")
+    fun getAlbumById(albumId: Long): Flow<AlbumEntity?>
+
+    @Query("SELECT COUNT(*) FROM songs WHERE album_id = :albumId")
+    fun getAlbumSongsCount(albumId: Long): Flow<Int>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM songs
+        INNER JOIN artists ON songs.artist_id = artists.id
+        WHERE artists.name like '%' || :artistName || '%'
+    """
+    )
+    fun getArtistSongsCount(artistName: String): Flow<Int>
 
 }
 

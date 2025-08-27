@@ -4,10 +4,14 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import org.ghost.musify.dao.ArtistImageDao
 import org.ghost.musify.dao.FavoriteDao
 import org.ghost.musify.dao.HistoryAndStatsDao
 import org.ghost.musify.dao.PlaylistDao
 import org.ghost.musify.dao.SongDao
+import org.ghost.musify.entity.AlbumEntity
+import org.ghost.musify.entity.ArtistEntity
+import org.ghost.musify.entity.ArtistImageEntity
 import org.ghost.musify.entity.ArtistStatsEntity
 import org.ghost.musify.entity.FavoriteSongEntity
 import org.ghost.musify.entity.HistoryEntity
@@ -24,7 +28,10 @@ import org.ghost.musify.entity.SongStatsEntity
         HistoryEntity::class,
         PlaylistEntity::class,
         PlaylistSongCrossRef::class,
-        SongStatsEntity::class
+        SongStatsEntity::class,
+        ArtistEntity::class,
+        AlbumEntity::class,
+        ArtistImageEntity::class
     ],
     version = 1,
     exportSchema = true
@@ -34,6 +41,7 @@ abstract class MusifyDatabase : RoomDatabase() {
     abstract fun playlistDao(): PlaylistDao
     abstract fun songDao(): SongDao
     abstract fun historyAndStatsDao(): HistoryAndStatsDao
+    abstract fun artistImageDao(): ArtistImageDao
 
 
     companion object {

@@ -2,6 +2,7 @@ package org.ghost.musify.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -11,7 +12,19 @@ import androidx.room.PrimaryKey
  */
 @Entity(
     tableName = "songs",
-    indices = [Index("album_id"), Index("artist"), Index("title")]
+    foreignKeys = [
+        ForeignKey(
+            entity = AlbumEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["album_id"]
+        ),
+        ForeignKey(
+            entity = ArtistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["artist_id"]
+        )
+    ],
+    indices = [Index("album_id"), Index("artist_id"), Index("title")]
 )
 data class SongEntity(
     // --- Essential Metadata ---
@@ -21,14 +34,9 @@ data class SongEntity(
     @ColumnInfo(name = "title")
     val title: String, // From MediaStore.Audio.Media.TITLE
 
-    @ColumnInfo(name = "artist")
-    val artist: String, // From MediaStore.Audio.Media.ARTIST
+    @ColumnInfo(name = "artist_id")
+    val artistId: Long, // From MediaStore.Audio.Media.ARTIST_ID
 
-    @ColumnInfo(name = "album")
-    val album: String, // From MediaStore.Audio.Media.ALBUM
-
-    @ColumnInfo(name = "album_artist")
-    val albumArtist: String?, // From MediaStore.Audio.Media.ALBUM_ARTIST
 
     @ColumnInfo(name = "album_id")
     val albumId: Long, // From MediaStore.Audio.Media.ALBUM_ID

@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.palette.ktx)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -71,6 +72,7 @@ dependencies {
     // Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.runtime)
     ksp(libs.hilt.android.compiler)
 
     // Database
@@ -103,4 +105,14 @@ dependencies {
 
     //accompanist
     implementation(libs.accompanist.permissions)
+
+    //media3
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui.compose)
+    implementation(libs.media3.session)
+    implementation(libs.media3.common)
+
+    //constraint
+    implementation(libs.androidx.constraintlayout.compose)
+
 }

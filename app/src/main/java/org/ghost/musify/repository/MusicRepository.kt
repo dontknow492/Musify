@@ -2,22 +2,29 @@ package org.ghost.musify.repository
 
 import android.content.Context
 import android.provider.MediaStore
+import android.util.Log
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
+import org.ghost.musify.dao.ArtistImageDao
 import org.ghost.musify.dao.FavoriteDao
 import org.ghost.musify.dao.HistoryAndStatsDao
 import org.ghost.musify.dao.PlaylistDao
 import org.ghost.musify.dao.SongDao
+import org.ghost.musify.entity.AlbumEntity
+import org.ghost.musify.entity.ArtistEntity
+import org.ghost.musify.entity.ArtistImageEntity
 import org.ghost.musify.entity.FavoriteSongEntity
 import org.ghost.musify.entity.HistoryEntity
 import org.ghost.musify.entity.PlaylistEntity
 import org.ghost.musify.entity.PlaylistSongCrossRef
 import org.ghost.musify.entity.SongEntity
+import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
 import javax.inject.Inject
@@ -28,10 +35,11 @@ class MusicRepository @Inject constructor(
     private val playlistDao: PlaylistDao,
     private val historyAndStatsDao: HistoryAndStatsDao,
     private val favoriteDao: FavoriteDao,
+    private val artistImageDao: ArtistImageDao,
 ) {
     private val pagingConfig = PagingConfig(
-        pageSize = 20,
-        enablePlaceholders = false
+        pageSize = 120,
+        enablePlaceholders = true
     )
 
     // --- Data Synchronization ---
@@ -62,7 +70,17 @@ class MusicRepository @Inject constructor(
         // Step 4: Fetch full data for only the new/updated songs and save them.
         if (idsToUpdateOrInsert.isNotEmpty()) {
             val songsToInsert = fetchFullSongDetails(idsToUpdateOrInsert)
-            songDao.insertSongs(songsToInsert) // Uses OnConflictStrategy.REPLACE
+
+            Log.d("MusicRepository", "ArtistImage to insert: ${songsToInsert["artistImages"]}")
+
+            songDao.insertSongsWithAlbumAndArtist(
+                songsToInsert["songs"] as List<SongEntity>,
+                songsToInsert["albums"] as List<AlbumEntity>,
+                songsToInsert["artists"] as List<ArtistEntity>
+            ) // Uses OnConflictStrategy.REPLACE
+
+            updateArtistsImage(songsToInsert["artistImages"] as List<ArtistImageEntity>)
+
         }
     }
 
@@ -101,12 +119,16 @@ class MusicRepository @Inject constructor(
      * Fetches the full SongEntity details from MediaStore for a specific set of song IDs.
      * This is called only for songs that are new or have been updated.
      */
-    private fun fetchFullSongDetails(songIds: Set<Long>): List<SongEntity> {
+    private fun fetchFullSongDetails(songIds: Set<Long>): Map<String, List<Any>> {
         // This function will be very similar to your original `scanMediaStoreForSongs`,
         // but with an added WHERE clause to select by ID.
-        if (songIds.isEmpty()) return emptyList()
+        if (songIds.isEmpty()) return emptyMap()
 
         val songList = mutableListOf<SongEntity>()
+        val artistList = mutableListOf<ArtistEntity>()
+        val albumList = mutableListOf<AlbumEntity>()
+        val artistImageList = mutableListOf<ArtistImageEntity>()
+
         val selection = "${MediaStore.Audio.Media._ID} IN (${songIds.joinToString(",")})"
 
         // The projection here should include ALL columns needed for your SongEntity
@@ -114,6 +136,7 @@ class MusicRepository @Inject constructor(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.ARTIST_ID,
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DURATION,
@@ -145,8 +168,7 @@ class MusicRepository @Inject constructor(
                 val song = SongEntity(
                     id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)),
                     title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)),
-                    artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)),
-                    album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)),
+                    artistId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID)),
                     albumId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)),
                     duration = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)),
                     trackNumber = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)),
@@ -156,7 +178,6 @@ class MusicRepository @Inject constructor(
                     dateModified = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)),
                     size = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)),
                     mimeType = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)),
-                    albumArtist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ARTIST)),
                     composer = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.COMPOSER)),
                     bitrate = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.BITRATE)),
                     isMusic = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.IS_MUSIC)) == 1,
@@ -165,94 +186,61 @@ class MusicRepository @Inject constructor(
                     isAlarm = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.IS_ALARM)) == 1,
                     isNotification = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.IS_NOTIFICATION)) == 1
                 )
+                val album = AlbumEntity(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)),
+                    title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)),
+                    artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST))
+                )
+                val artist = ArtistEntity(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID)),
+                    name = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST))
+                )
+
+                val nameSeparator = listOf(',', '-', '&')
+                val artistNames = artist.name.split(*nameSeparator.toCharArray())
+
+                artistNames.forEach { artistName ->
+                    artistImageList.add(ArtistImageEntity(name = artistName))
+                }
+
                 songList.add(song)
+                if (albumList.none { it.id == album.id }) {
+                    albumList.add(album)
+                }
+                if (artistList.none { it.id == artist.id }) {
+                    artistList.add(artist)
+                }
+
             }
         }
-        return songList
-    }
-
-    /**
-     * Queries the Android MediaStore for all audio files and maps them to SongEntity objects.
-     */
-    private fun scanMediaStoreForSongs(): List<SongEntity> {
-        val songList = mutableListOf<SongEntity>()
-
-        val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.ALBUM,
-            MediaStore.Audio.Media.ALBUM_ID,
-            MediaStore.Audio.Media.DURATION,
-            MediaStore.Audio.Media.TRACK,
-            MediaStore.Audio.Media.YEAR,
-            MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.DATE_ADDED,
-            MediaStore.Audio.Media.DATE_MODIFIED,
-            MediaStore.Audio.Media.SIZE,
-            MediaStore.Audio.Media.MIME_TYPE,
-            MediaStore.Audio.Media.ALBUM_ARTIST,
-            MediaStore.Audio.Media.COMPOSER,
-            MediaStore.Audio.Media.BITRATE,
-            MediaStore.Audio.Media.IS_MUSIC,
-            MediaStore.Audio.Media.IS_PODCAST,
-            MediaStore.Audio.Media.IS_RINGTONE,
-            MediaStore.Audio.Media.IS_ALARM,
-            MediaStore.Audio.Media.IS_NOTIFICATION
+        return mapOf<String, List<Any>>(
+            "songs" to songList,
+            "albums" to albumList,
+            "artists" to artistList,
+            "artistImages" to artistImageList
         )
-
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
-        val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
-
-        context.contentResolver.query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            selection,
-            null,
-            sortOrder
-        )?.use { cursor ->
-            while (cursor.moveToNext()) {
-                val song = SongEntity(
-                    id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)),
-                    title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)),
-                    artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)),
-                    album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)),
-                    albumId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)),
-                    duration = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)),
-                    trackNumber = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)),
-                    year = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)),
-                    filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)),
-                    dateAdded = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)),
-                    dateModified = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)),
-                    size = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)),
-                    mimeType = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)),
-                    albumArtist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ARTIST)),
-                    composer = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.COMPOSER)),
-                    bitrate = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.BITRATE)),
-                    isMusic = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.IS_MUSIC)) == 1,
-                    isPodcast = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.IS_PODCAST)) == 1,
-                    isRingtone = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.IS_RINGTONE)) == 1,
-                    isAlarm = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.IS_ALARM)) == 1,
-                    isNotification = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.IS_NOTIFICATION)) == 1
-                )
-                songList.add(song)
-            }
-        }
-        return songList
     }
+
 
     // --- Song Access ---
 
+
     fun getAllSongs(
         query: String = "",
+        artist: String = "",
+        albumId: Long? = null,
         sortBy: SortBy = SortBy.TITLE,
         sortOrder: SortOrder = SortOrder.ASCENDING
-    ): Flow<PagingData<SongEntity>> {
+    ): Flow<PagingData<SongWithAlbumAndArtist>> {
         return Pager(config = pagingConfig) {
 
             songDao.getAllSongs(
                 query = query,
                 sortBy = sortBy,
+                albumId = albumId,
+                artist = artist,
+                artistId = null,
+                album = "",
                 sortOrder = sortOrder
             )
         }.flow
@@ -264,14 +252,72 @@ class MusicRepository @Inject constructor(
 
     // --- Playlist Access & Management ---
 
-    fun getAllPlaylists(): Flow<PagingData<PlaylistEntity>> {
+    fun getAllPlaylists(
+        query: String = "",
+        sortBy: SortBy = SortBy.TITLE,
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): Flow<PagingData<PlaylistEntity>> {
         return Pager(config = pagingConfig) {
-            playlistDao.getAllPlaylists()
+            playlistDao.getAllPlaylists(
+                query = query,
+                sortBy = sortBy,
+                sortOrder = sortOrder
+            )
         }.flow
     }
 
-    suspend fun createPlaylist(name: String) {
-        playlistDao.createPlaylist(PlaylistEntity(name = name))
+    fun getAllArtists(
+        query: String = "",
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): Flow<PagingData<ArtistEntity>> {
+        return Pager(config = pagingConfig) {
+            songDao.getAllArtists(
+                query = query,
+                sortOrder = sortOrder
+            )
+        }.flow
+    }
+
+    fun getAllAlbums(
+        query: String = "",
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): Flow<PagingData<AlbumEntity>> {
+        return Pager(config = pagingConfig) {
+            songDao.getAllAlbums(
+                query = query,
+                sortOrder = sortOrder
+            )
+        }.flow
+    }
+
+    fun getAllAritistImage(
+        query: String = "",
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): Flow<PagingData<ArtistImageEntity>> = Pager(config = pagingConfig) {
+        artistImageDao.getAllArtistImages(
+            query = query,
+            sortOrder = sortOrder
+        )
+    }.flow
+
+    fun getPlaylistSongs(
+        playlistId: Long,
+        query: String = "",
+        sortBy: SortBy = SortBy.TITLE,
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): Flow<PagingData<SongWithAlbumAndArtist>> {
+        return Pager(config = pagingConfig) {
+            playlistDao.getSongsInPlaylist(
+                playlistId,
+                query,
+                sortBy,
+                sortOrder
+            )
+        }.flow
+    }
+
+    suspend fun createPlaylist(playlist: PlaylistEntity) {
+        playlistDao.createPlaylist(playlist)
     }
 
     suspend fun addSongToPlaylist(playlistId: Long, songId: Long) {
@@ -284,7 +330,7 @@ class MusicRepository @Inject constructor(
         query: String = "",
         sortBy: SortBy = SortBy.ADDED_AT,
         sortOrder: SortOrder = SortOrder.DESCENDING
-    ): Flow<PagingData<SongEntity>> {
+    ): Flow<PagingData<SongWithAlbumAndArtist>> {
         return Pager(config = pagingConfig) {
             favoriteDao.getFavoriteSongs(
                 query = query,
@@ -311,7 +357,7 @@ class MusicRepository @Inject constructor(
     fun getRecentlyPlayed(
         query: String = "",
         sortOrder: SortOrder = SortOrder.DESCENDING
-    ): Flow<PagingData<SongEntity>> {
+    ): Flow<PagingData<SongWithAlbumAndArtist>> {
         return Pager(config = pagingConfig) {
             historyAndStatsDao.getRecentlyPlayed(
                 query = query,
@@ -324,7 +370,7 @@ class MusicRepository @Inject constructor(
         query: String = "",
         sortBy: SortBy = SortBy.TITLE,
         sortOrder: SortOrder = SortOrder.ASCENDING
-    ): Flow<PagingData<SongEntity>> {
+    ): Flow<PagingData<SongWithAlbumAndArtist>> {
         return Pager(config = pagingConfig) {
             historyAndStatsDao.getTopPlayedSongs(
                 query = query,
@@ -336,4 +382,44 @@ class MusicRepository @Inject constructor(
     suspend fun addToHistory(history: HistoryEntity) {
         historyAndStatsDao.addToHistory(history)
     }
+
+    suspend fun updateArtistsImage(artistsImage: List<ArtistImageEntity>) {
+        artistsImage.forEach { artistImage ->
+            artistImageDao.upsertMerging(artistImage)
+        }
+    }
+
+    suspend fun updateArtistImage(artistImage: ArtistImageEntity) {
+        // 1. Fetch the current artist data from the database
+        artistImageDao.upsertMerging(artistImage)
+    }
+
+    fun getAlbum(albumId: Long?): Flow<AlbumEntity?> {
+        if (albumId == null) return flowOf(null)
+        return songDao.getAlbumById(albumId)
+    }
+
+    fun getAlbumSongsCount(albumId: Long?): Flow<Int> {
+        if (albumId == null) return flowOf(0)
+        return songDao.getAlbumSongsCount(albumId)
+    }
+
+    fun getArtistByName(artistName: String): Flow<ArtistImageEntity?> {
+        return artistImageDao.getArtistImageByName(artistName)
+    }
+
+    fun getArtistSongsCount(artistName: String): Flow<Int> {
+        return songDao.getArtistSongsCount(artistName)
+    }
+
+    fun getPlaylistById(playlistId: Long?): Flow<PlaylistEntity?> {
+        if (playlistId == null) return flowOf(null)
+        return playlistDao.getPlaylistById(playlistId)
+    }
+
+    fun getPlaylistSongsCount(playlistId: Long?): Flow<Int> {
+        if (playlistId == null) return flowOf(0)
+        return playlistDao.getPlaylistSongsCount(playlistId)
+    }
+
 }

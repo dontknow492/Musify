@@ -6,13 +6,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,61 +20,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import org.ghost.musify.ui.theme.MusicRepository
+import org.ghost.musify.navigation.AppNavigation
+import org.ghost.musify.navigation.NavScreen
 import org.ghost.musify.ui.theme.MusifyTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    lateinit var navController: NavHostController
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            var _songs = MutableStateFlow<List<Song>>(emptyList())
-            // A public StateFlow to expose the list to the UI, making it read-only.
-            _songs
-
-            val songAll = MusicRepository(this).getAllSongs()
-
-            MusifyTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Column {
-                        RequestAudioPermission {
-                            Greeting(
-                                name = "Android: ${songAll.size} songs found",
-                                modifier = Modifier.padding(innerPadding)
-                            )
-                            songAll.forEach { song ->
-                                Text(
-                                    text = song.title,
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-                                Text(
-                                    text = song.artist,
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-                                Text(
-                                    text = song.duration.toString(),
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-                                Text(
-                                    text = song.albumArtUri.toString(),
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-                                Text(
-                                    text = song.id.toString(),
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-
-                            }
-                        }
-                    }
-                    // Main content goes here, e.g., SongListScreen()
-                }
+            navController = rememberNavController()
+            MusifyTheme(
+                dynamicColor = false
+            ) {
+//                val start = NavScreen.AlbumSongs(1312244804222984308L)
+                val start = NavScreen.Home
+                AppNavigation(
+                    navController = navController,
+                    startDestination = start
+                )
             }
         }
     }

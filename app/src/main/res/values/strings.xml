@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Musify</string>
+    <string name="home" translatable="false">Home</string>
+    <string name="search" translatable="false">Search</string>
+    <string name="refresh" translatable="false">Refresh</string>
+    <string name="settings" translatable="false">Settings</string>
+    <string name="history" translatable="false">History</string>
+    <string name="artist" translatable="false">Artist</string>
+    <string name="album" translatable="false">Album</string>
+    <string name="song" translatable="false">Song</string>
+    <string name="playlist" translatable="false">Playlist</string>
+    <string name="favorite" translatable="false">Favorite</string>
 </resources>

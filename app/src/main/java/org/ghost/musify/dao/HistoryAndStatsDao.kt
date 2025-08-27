@@ -8,8 +8,8 @@ import androidx.room.Query
 import androidx.room.Transaction
 import org.ghost.musify.entity.ArtistStatsEntity
 import org.ghost.musify.entity.HistoryEntity
-import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.SongStatsEntity
+import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
 
@@ -33,7 +33,7 @@ interface HistoryAndStatsDao {
     fun getRecentlyPlayed(
         query: String,
         sortOrder: SortOrder
-    ): PagingSource<Int, SongEntity> {
+    ): PagingSource<Int, SongWithAlbumAndArtist> {
         val sortBy = SortBy.PLAYED_AT
         return if (sortOrder == SortOrder.ASCENDING) {
             getHistoryPlayedAsc(query, sortBy.value)
@@ -54,7 +54,10 @@ interface HistoryAndStatsDao {
             CASE WHEN :sortBy = 'duration' THEN s.duration END ASC
     """
     )
-    fun getHistoryPlayedAsc(query: String, sortBy: String): PagingSource<Int, SongEntity>
+    fun getHistoryPlayedAsc(
+        query: String,
+        sortBy: String
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 
     @Transaction
     @Query(
@@ -68,13 +71,16 @@ interface HistoryAndStatsDao {
             CASE WHEN :sortBy = 'duration_played' THEN s.duration END DESC
     """
     )
-    fun getHistoryPlayedDesc(query: String, sortBy: String): PagingSource<Int, SongEntity>
+    fun getHistoryPlayedDesc(
+        query: String,
+        sortBy: String
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 
 
     fun getTopPlayedSongs(
         query: String,
         sortOrder: SortOrder
-    ): PagingSource<Int, SongEntity> {
+    ): PagingSource<Int, SongWithAlbumAndArtist> {
         val sortBy = SortBy.PLAY_COUNT
         return if (sortOrder == SortOrder.ASCENDING) {
             getStatsPlayedSongsAsc(query, sortBy.value)
@@ -95,7 +101,10 @@ interface HistoryAndStatsDao {
             CASE WHEN :sortBy = 'duration' THEN s.duration END ASC
     """
     )
-    fun getStatsPlayedSongsAsc(query: String, sortBy: String): PagingSource<Int, SongEntity>
+    fun getStatsPlayedSongsAsc(
+        query: String,
+        sortBy: String
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 
     @Transaction
     @Query(
@@ -109,7 +118,10 @@ interface HistoryAndStatsDao {
             CASE WHEN :sortBy = 'duration' THEN s.duration END DESC
     """
     )
-    fun getStatsPlayedSongsDesc(query: String, sortBy: String): PagingSource<Int, SongEntity>
+    fun getStatsPlayedSongsDesc(
+        query: String,
+        sortBy: String
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 
 
     // --- Artist Statistics ---

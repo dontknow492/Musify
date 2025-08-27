@@ -33,4 +33,8 @@ class MusicDBModule {
     @Singleton
     @Provides
     fun provideHistoryAndStatsDao(database: MusifyDatabase) = database.historyAndStatsDao()
+
+    @Singleton
+    @Provides
+    fun provideArtistImageDao(database: MusifyDatabase) = database.artistImageDao()
 }
