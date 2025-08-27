@@ -51,7 +51,7 @@ fun AlbumSongs(modifier: Modifier = Modifier, viewModel: AlbumSongsViewModel = h
             onPlayClick = {},
             onCardClick = {},
             onFilterClick = {},
-            onShuffleClick = {}
+            onShuffleClick = {},
         )
     }
 
