@@ -4,23 +4,37 @@ package org.ghost.musify.utils
 import android.os.Build
 import androidx.annotation.RequiresApi
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun formatDuration(millis: Long): String {
+fun Long.toFormattedDuration(): String {
+    // This function operates on the Long value it's called on (the milliseconds)
 
-// 1. Convert milliseconds to whole seconds
-    val duration = Duration.ofMillis(millis)
+    val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(this)
 
-// Extract the parts you need
-    val hours = duration.toHours()
-    val minutes = duration.toMinutes()
-    val seconds = duration.toSeconds() % 60 // Get the remaining seconds
+    val hours = TimeUnit.SECONDS.toHours(totalSeconds)
+    val minutes = TimeUnit.SECONDS.toMinutes(totalSeconds) % 60
+    val seconds = totalSeconds % 60
 
-
-// 2. Format using DateUtils
-    if (hours > 0) {
-        return String.format("%02d:%02d:%02d", hours, minutes % 60, seconds)
+    return if (hours > 0) {
+        String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format("%02d:%02d", minutes, seconds)
     }
-    return String.format("%02d:%02d", minutes, seconds)
+}
+
+fun Int.toFormattedDuration(): String {
+    // This function operates on the Long value it's called on (the milliseconds)
+
+    val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(this.times(1000L))
+
+    val hours = TimeUnit.SECONDS.toHours(totalSeconds)
+    val minutes = TimeUnit.SECONDS.toMinutes(totalSeconds) % 60
+    val seconds = totalSeconds % 60
+
+    return if (hours > 0) {
+        String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format("%02d:%02d", minutes, seconds)
+    }
 }

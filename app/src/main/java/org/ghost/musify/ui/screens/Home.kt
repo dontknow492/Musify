@@ -4,8 +4,10 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -47,6 +50,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.launch
 import org.ghost.musify.R
+import org.ghost.musify.ui.screens.common.SongList
 import org.ghost.musify.ui.screens.common.SongsScreen
 import org.ghost.musify.ui.screens.models.Tab
 import org.ghost.musify.ui.screens.tabWindow.AlbumScreen
@@ -96,64 +100,76 @@ fun HomeScreen(
     val allSongs = viewModel.music.collectAsLazyPagingItems()
     val favoriteSongs = viewModel.favoriteSongs.collectAsLazyPagingItems()
 
-    PullToRefreshBox(
-        isRefreshing = false,
-        onRefresh = {},
-        modifier = modifier
-            .fillMaxSize()
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(horizontal = 8.dp)
-        ) {
-            SongsTab(
-                selectedIndex = pageState.currentPage,
-                tabs = tabs,
-                onClick = {
-                    scope.launch {
-                        Log.d("HomeScreen", "Going to page: $it")
-                        pageState.animateScrollToPage(it)
-                    }
-
-                }
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            HomeTopAppBar(
+                search = search,
+                onSearchChange = onSearchChange,
+                onFilterClick = {}
             )
-
-            HorizontalPager(
-                pageState,
-            ) { page ->
-                when (page) {
-                    0 -> SongsScreen(modifier = Modifier.fillMaxSize(), allSongs)
-                    1 -> ArtistScreen(
-                        modifier = Modifier.fillMaxSize(),
-                        viewModel = hiltViewModel(),
-                        onArtistClick = onArtistClick
-                    )
-
-                    2 -> AlbumScreen(
-                        modifier = Modifier.fillMaxSize(),
-                        viewModel = hiltViewModel(),
-                        onAlbumClick = onAlbumClick
-                    )
-
-                    3 -> PlaylistScreen(
-                        modifier = Modifier.fillMaxSize(),
-                        viewModel = hiltViewModel(),
-                        onPlaylistClick = onPlaylistClick
-
-                    )
-
-                    4 -> SongsScreen(modifier = Modifier.fillMaxSize(), favoriteSongs)
-                }
-            }
-
         }
-    }
-    AnimatedVisibility(isBottomSheetVisible) {
-        ModalBottomSheet(
-            onDismissRequest = { isBottomSheetVisible = false },
-            modifier = Modifier.padding(horizontal = 8.dp)
+    ) { innerPadding ->
+        val modifier = Modifier.padding(innerPadding)
+        PullToRefreshBox(
+            isRefreshing = false,
+            onRefresh = {},
+            modifier = modifier
+                .fillMaxSize()
         ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                SongsTab(
+                    selectedIndex = pageState.currentPage,
+                    tabs = tabs,
+                    onClick = {
+                        scope.launch {
+                            Log.d("HomeScreen", "Going to page: $it")
+                            pageState.animateScrollToPage(it)
+                        }
 
+                    }
+                )
+
+                HorizontalPager(
+                    pageState,
+                ) { page ->
+                    when (page) {
+                        0 -> SongsScreen(modifier = Modifier.fillMaxSize(), allSongs)
+                        1 -> ArtistScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            viewModel = hiltViewModel(),
+                            onArtistClick = onArtistClick
+                        )
+
+                        2 -> AlbumScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            viewModel = hiltViewModel(),
+                            onAlbumClick = onAlbumClick
+                        )
+
+                        3 -> PlaylistScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            viewModel = hiltViewModel(),
+                            onPlaylistClick = onPlaylistClick
+
+                        )
+
+                        4 -> SongsScreen(modifier = Modifier.fillMaxSize(), favoriteSongs)
+                    }
+                }
+
+            }
+        }
+        AnimatedVisibility(isBottomSheetVisible) {
+            ModalBottomSheet(
+                onDismissRequest = { isBottomSheetVisible = false },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+
+            }
         }
     }
 
@@ -169,6 +185,7 @@ fun HomeTopAppBar(
 ) {
     var isSearchVisible by rememberSaveable { mutableStateOf(false) }
     TopAppBar(
+        modifier = modifier,
         title = {
             if (!isSearchVisible) {
                 Text(

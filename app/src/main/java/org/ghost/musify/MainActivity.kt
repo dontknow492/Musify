@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = false
             ) {
 //                val start = NavScreen.AlbumSongs(1312244804222984308L)
-                val start = NavScreen.Home
+                val start = NavScreen.PlayerScreen()
                 AppNavigation(
                     navController = navController,
                     startDestination = start

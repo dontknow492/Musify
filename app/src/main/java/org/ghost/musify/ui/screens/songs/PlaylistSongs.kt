@@ -3,6 +3,8 @@ package org.ghost.musify.ui.screens.songs
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,13 +51,16 @@ fun PlaylistSongs(
 
         Log.d("Playlist Songs", "Playlist Songs: $playlistData")
 
-        SongList(
-            modifier = modifier,
-            data = playlistData,
-            onPlayClick = {},
-            onCardClick = {},
-            onFilterClick = {},
-            onShuffleClick = {}
-        )
+        Scaffold { innerPadding ->
+            val modifier = Modifier.padding(innerPadding)
+            SongList(
+                modifier = modifier,
+                data = playlistData,
+                onPlayClick = {},
+                onCardClick = {},
+                onFilterClick = {},
+                onShuffleClick = {},
+            )
+        }
     }
 }

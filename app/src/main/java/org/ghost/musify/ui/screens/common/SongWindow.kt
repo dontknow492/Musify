@@ -22,6 +22,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import org.ghost.musify.R
+import org.ghost.musify.ui.screens.components.SearchableAppBar
+import org.ghost.musify.ui.screens.components.SearchableTopAppBar
 import org.ghost.musify.ui.screens.models.SongWindowData
 
 
@@ -54,38 +58,53 @@ fun SongList(
         title = if (data.title.isEmpty() || data.title == "<unknown>") "Unknown" else data.title,
         body = if (data.body.isEmpty() || data.body == "<unknown>") "Unknown" else data.body,
     )
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        SongsScreen(
-            songs = data.songs,
-            item = {
-                Heading(
-                    modifier = Modifier,
-                    title = data.title,
-                    body = data.body,
-                    image = data.image,
-                    count = data.count,
-                    type = data.type,
-                    background = data.backgroundImage,
-                    onPlayClick = onPlayClick,
-                    onShuffleClick = onShuffleClick
+    Scaffold(
+        modifier = modifier,
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onPlayClick,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(34.dp)
                 )
             }
-        )
-        FloatingActionButton(
-            onClick = onPlayClick,
+        }
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    )
+                )
+                .padding(innerPadding)
         ) {
-            Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(34.dp)
+            SearchableAppBar()
+            SongsScreen(
+                songs = data.songs,
+                item = {
+                    Heading(
+                        modifier = Modifier,
+                        title = data.title,
+                        body = data.body,
+                        image = data.image,
+                        count = data.count,
+                        type = data.type,
+                        background = data.backgroundImage,
+                        onPlayClick = onPlayClick,
+                        onShuffleClick = onShuffleClick
+                    )
+                }
             )
         }
     }
+
 }
 
 
@@ -103,23 +122,10 @@ fun Heading(
 ) {
     BoxWithConstraints(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surface)
+//            .background(MaterialTheme.colorScheme.surface)
             .fillMaxWidth()
     ) {
         val width = maxWidth
-
-        AsyncImage(
-            model = background ?: image,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .matchParentSize()
-                .blur(
-                    radius = 30.dp,
-                    edgeTreatment = BlurredEdgeTreatment.Unbounded
-                ),
-
-            )
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)

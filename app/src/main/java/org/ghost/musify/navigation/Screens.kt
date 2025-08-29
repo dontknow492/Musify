@@ -31,4 +31,7 @@ sealed interface NavScreen {
     data class PlaylistSongs(
         val playlistId: Long
     ) : NavScreen
+
+    @Serializable
+    data class PlayerScreen(val songId: Long? = null) : NavScreen
 }

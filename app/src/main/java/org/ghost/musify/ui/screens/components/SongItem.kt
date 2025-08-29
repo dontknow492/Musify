@@ -54,9 +54,9 @@ import org.ghost.musify.entity.ArtistEntity
 import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.utils.cacheEmbeddedArt
-import org.ghost.musify.utils.formatDuration
 import org.ghost.musify.utils.getAlbumArtUri
 import org.ghost.musify.utils.getSongUri
+import org.ghost.musify.utils.toFormattedDuration
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -217,7 +217,7 @@ fun SongItem(
                 )
             }
             Text(
-                text = formatDuration(song.duration.toLong()),
+                text = song.duration.toFormattedDuration(),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium
