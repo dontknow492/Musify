@@ -54,19 +54,6 @@ fun ArtistSongs(modifier: Modifier = Modifier, viewModel: ArtistSongsViewModel =
             onShuffleClick = {}
         )
     }
-//
-//
-//        Log.d("AlbumSongs", "AlbumSongs: $albumData")
-//
-//        SongList(
-//            modifier = modifier,
-//            data = albumData,
-//            onPlayClick = {},
-//            onCardClick = {},
-//            onFilterClick = {},
-//            onShuffleClick = {}
-//        )
-//    }
 }
 
 

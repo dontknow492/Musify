@@ -19,7 +19,10 @@ import org.ghost.musify.viewModels.songs.AlbumSongsViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun AlbumSongs(modifier: Modifier = Modifier, viewModel: AlbumSongsViewModel = hiltViewModel()) {
+fun AlbumSongs(
+    modifier: Modifier = Modifier,
+    viewModel: AlbumSongsViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
     DynamicThemeFromImage(
         uiState.album?.albumImageUriId ?: uiState.album?.albumImageUrl

@@ -1,4 +1,4 @@
-package org.ghost.musify.database
+package org.ghost.musify.di
 
 import android.content.Context
 import dagger.Module
@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import org.ghost.musify.database.MusifyDatabase
 import javax.inject.Singleton
 
 @Module
@@ -15,7 +16,7 @@ class MusicDBModule {
     @Singleton
     @Provides
     fun provideMusicDatabase(@ApplicationContext context: Context): MusifyDatabase {
-        return MusifyDatabase.getInstance(context)
+        return MusifyDatabase.Companion.getInstance(context)
     }
 
     @Singleton

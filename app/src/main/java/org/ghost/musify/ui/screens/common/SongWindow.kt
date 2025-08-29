@@ -4,10 +4,12 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,7 +22,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import org.ghost.musify.R
-import org.ghost.musify.ui.screens.items.SearchableTopAppBar
 import org.ghost.musify.ui.screens.models.SongWindowData
 
 
@@ -54,31 +54,10 @@ fun SongList(
         title = if (data.title.isEmpty() || data.title == "<unknown>") "Unknown" else data.title,
         body = if (data.body.isEmpty() || data.body == "<unknown>") "Unknown" else data.body,
     )
-    Scaffold(
-        topBar = {
-            SearchableTopAppBar(
-                modifier = modifier.fillMaxWidth(),
-                title = data.headingTitle,
-                onFilterClick = onFilterClick
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onPlayClick
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(34.dp)
-                )
-            }
-        },
-        modifier = modifier
-    ) { innerPadding ->
-        val modifier = Modifier.padding(innerPadding)
-
+    Box(
+        modifier = modifier.fillMaxSize()
+    ) {
         SongsScreen(
-            modifier = modifier,
             songs = data.songs,
             item = {
                 Heading(
@@ -94,6 +73,18 @@ fun SongList(
                 )
             }
         )
+        FloatingActionButton(
+            onClick = onPlayClick,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null,
+                modifier = Modifier.size(34.dp)
+            )
+        }
     }
 }
 

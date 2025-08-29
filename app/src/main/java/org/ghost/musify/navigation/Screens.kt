@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface NavScreen {
+
     @Serializable
     object Home : NavScreen
 

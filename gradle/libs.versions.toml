@@ -1,14 +1,15 @@
 [versions]
-agp = "8.12.1"
+agp = "8.12.2"
 kotlin = "2.2.10"
 coreKtx = "1.17.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
-lifecycleRuntimeKtx = "2.9.2"
+lifecycleRuntimeKtx = "2.9.3"
 activityCompose = "1.10.1"
-composeBom = "2025.08.00"
+composeBom = "2025.08.01"
 constraintlayout-compose = "1.1.1"
+serialization-json = "1.9.0"
 
 nav = "2.9.3"
 room = "2.7.2"
@@ -16,8 +17,11 @@ ksp = "2.2.10-2.0.2" # ⚠️ Room KSP compiler version must match Kotlin versio
 coil = "3.3.0"
 protoliteWellKnownTypes = "18.0.1"
 paging_version = "3.3.6"
-hilt = "2.57"
+hilt = "2.57.1"
 hilt-navigation-compose = "1.2.0"
+
+guava = "33.4.8-android"
+kotlinx-coroutines-guava = "1.10.2"
 
 media3_version = "1.8.0"
 
@@ -42,6 +46,10 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-palette-ktx = { group = "androidx.palette", name = "palette-ktx", version.ref = "palette-ktx" }
+
+#guava
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+kotlinx-coroutines-guava = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-guava", version.ref = "kotlinx-coroutines-guava" }
 
 
 #pagging
@@ -81,6 +89,10 @@ media3-session = { group = "androidx.media3", name = "media3-session", version.r
 media3-ui-compose = { group = "androidx.media3", name = "media3-ui-compose", version.ref = "media3_version" }
 media3-common = { group = "androidx.media3", name = "media3-common", version.ref = "media3_version" }
 androidx-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
+
+#serialization
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization-json" }
+
 
 [plugins]
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

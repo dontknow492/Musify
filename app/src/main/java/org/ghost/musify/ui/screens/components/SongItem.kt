@@ -1,4 +1,4 @@
-package org.ghost.musify.ui.screens.items
+package org.ghost.musify.ui.screens.components
 
 import android.net.Uri
 import android.os.Build
@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -131,12 +132,14 @@ fun SongItem(
 
 
     Row(
-        modifier = Modifier.padding(
-            start = startPadding,
-            end = 4.dp,
-            top = 12.dp,
-            bottom = 12.dp
-        ),
+        modifier = Modifier
+            .padding(
+                start = startPadding,
+                end = 4.dp,
+                top = 12.dp,
+                bottom = 12.dp
+            )
+            .clickable(onClick = { onCardClick(song.id) }),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (isDraggable) {

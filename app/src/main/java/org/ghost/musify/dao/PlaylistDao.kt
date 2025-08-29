@@ -120,4 +120,61 @@ interface PlaylistDao {
     fun getPlaylistSongsCount(playlistId: Long): Flow<Int>
 
 
+    // --- Playlist Functions ---
+
+    suspend fun getSongsInPlaylistList(
+        playlistId: Long,
+        query: String,
+        sortBy: SortBy,
+        sortOrder: SortOrder
+    ): List<SongWithAlbumAndArtist> {
+        return if (sortOrder == SortOrder.ASCENDING) {
+            getSongsInPlaylistAscList(playlistId, query, sortBy.value)
+        } else {
+            getSongsInPlaylistDescList(playlistId, query, sortBy.value)
+        }
+    }
+
+    @Transaction
+    @Query(
+        """
+    SELECT s.* FROM songs s
+    INNER JOIN playlist_song_join psj ON s.id = psj.song_id
+    WHERE psj.playlist_id = :playlistId AND s.title LIKE '%' || :query || '%'
+    ORDER BY
+        CASE WHEN :sortBy = 'title' THEN s.title END ASC,
+        CASE WHEN :sortBy = 'duration' THEN s.duration END ASC,
+        CASE WHEN :sortBy = 'year' THEN s.year END ASC,
+        CASE WHEN :sortBy = 'date_added' THEN s.date_added END ASC
+"""
+    )
+    suspend fun getSongsInPlaylistAscList(
+        playlistId: Long,
+        query: String,
+        sortBy: String
+    ): List<SongWithAlbumAndArtist>
+
+
+    @Transaction
+    @Query(
+        """
+    SELECT s.* FROM songs s
+    INNER JOIN playlist_song_join psj ON s.id = psj.song_id
+    WHERE psj.playlist_id = :playlistId AND s.title LIKE '%' || :query || '%'
+    ORDER BY
+        CASE WHEN :sortBy = 'title' THEN s.title END DESC,
+        CASE WHEN :sortBy = 'duration' THEN s.duration END DESC,
+        CASE WHEN :sortBy = 'year' THEN s.year END DESC,
+        CASE WHEN :sortBy = 'date_added' THEN s.date_added END DESC
+"""
+    )
+    suspend fun getSongsInPlaylistDescList(
+        playlistId: Long,
+        query: String,
+        sortBy: String
+    ): List<SongWithAlbumAndArtist>
+
+    //
+
+
 }

@@ -1,4 +1,4 @@
-package org.ghost.musify.ui.screens.items
+package org.ghost.musify.ui.screens.components
 
 import androidx.compose.foundation.background
 import androidx.compose.material3.Card

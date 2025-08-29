@@ -4,12 +4,20 @@ import android.util.Log
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class MusicService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
 
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
+
+
     // Create the player and session when the service starts
     override fun onCreate() {
+
         Log.d("MusicService", "Service Created")
         super.onCreate()
         val player = ExoPlayer.Builder(this).build()

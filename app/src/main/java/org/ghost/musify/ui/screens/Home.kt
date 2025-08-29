@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -49,12 +48,11 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.launch
 import org.ghost.musify.R
 import org.ghost.musify.ui.screens.common.SongsScreen
-import org.ghost.musify.ui.screens.items.AppNavigationBar
 import org.ghost.musify.ui.screens.models.Tab
 import org.ghost.musify.ui.screens.tabWindow.AlbumScreen
 import org.ghost.musify.ui.screens.tabWindow.ArtistScreen
 import org.ghost.musify.ui.screens.tabWindow.PlaylistScreen
-import org.ghost.musify.viewModels.MusicViewModel
+import org.ghost.musify.viewModels.home.MusicViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -93,82 +91,69 @@ fun HomeScreen(
     var search by rememberSaveable { mutableStateOf("") }
     var isBottomSheetVisible by remember { mutableStateOf(false) }
     val onSearchChange: (String) -> Unit = { search = it }
-    val onFilterClick: () -> Unit = { isBottomSheetVisible = true }
+    { isBottomSheetVisible = true }
 
     val allSongs = viewModel.music.collectAsLazyPagingItems()
     val favoriteSongs = viewModel.favoriteSongs.collectAsLazyPagingItems()
 
-    Scaffold(
-        topBar = {
-            HomeTopAppBar(
-                search = search,
-                onSearchChange = onSearchChange,
-                onFilterClick = onFilterClick
-            )
-        },
-        modifier = modifier,
-        bottomBar = { AppNavigationBar() }
-    ) { innerPadding ->
-        PullToRefreshBox(
-            isRefreshing = false,
-            onRefresh = {},
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
+    PullToRefreshBox(
+        isRefreshing = false,
+        onRefresh = {},
+        modifier = modifier
+            .fillMaxSize()
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 8.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(horizontal = 8.dp)
-            ) {
-                SongsTab(
-                    selectedIndex = pageState.currentPage,
-                    tabs = tabs,
-                    onClick = {
-                        scope.launch {
-                            Log.d("HomeScreen", "Going to page: $it")
-                            pageState.animateScrollToPage(it)
-                        }
-
+            SongsTab(
+                selectedIndex = pageState.currentPage,
+                tabs = tabs,
+                onClick = {
+                    scope.launch {
+                        Log.d("HomeScreen", "Going to page: $it")
+                        pageState.animateScrollToPage(it)
                     }
-                )
 
-                HorizontalPager(
-                    pageState,
-                ) { page ->
-                    when (page) {
-                        0 -> SongsScreen(modifier = Modifier.fillMaxSize(), allSongs)
-                        1 -> ArtistScreen(
-                            modifier = Modifier.fillMaxSize(),
-                            viewModel = hiltViewModel(),
-                            onArtistClick = onArtistClick
-                        )
-
-                        2 -> AlbumScreen(
-                            modifier = Modifier.fillMaxSize(),
-                            viewModel = hiltViewModel(),
-                            onAlbumClick = onAlbumClick
-                        )
-
-                        3 -> PlaylistScreen(
-                            modifier = Modifier.fillMaxSize(),
-                            viewModel = hiltViewModel(),
-                            onPlaylistClick = onPlaylistClick
-
-                        )
-
-                        4 -> SongsScreen(modifier = Modifier.fillMaxSize(), favoriteSongs)
-                    }
                 }
+            )
 
+            HorizontalPager(
+                pageState,
+            ) { page ->
+                when (page) {
+                    0 -> SongsScreen(modifier = Modifier.fillMaxSize(), allSongs)
+                    1 -> ArtistScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        viewModel = hiltViewModel(),
+                        onArtistClick = onArtistClick
+                    )
+
+                    2 -> AlbumScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        viewModel = hiltViewModel(),
+                        onAlbumClick = onAlbumClick
+                    )
+
+                    3 -> PlaylistScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        viewModel = hiltViewModel(),
+                        onPlaylistClick = onPlaylistClick
+
+                    )
+
+                    4 -> SongsScreen(modifier = Modifier.fillMaxSize(), favoriteSongs)
+                }
             }
+
         }
-        AnimatedVisibility(isBottomSheetVisible) {
-            ModalBottomSheet(
-                onDismissRequest = { isBottomSheetVisible = false },
-                modifier = Modifier.padding(horizontal = 8.dp)
-            ) {
+    }
+    AnimatedVisibility(isBottomSheetVisible) {
+        ModalBottomSheet(
+            onDismissRequest = { isBottomSheetVisible = false },
+            modifier = Modifier.padding(horizontal = 8.dp)
+        ) {
 
-            }
         }
     }
 
@@ -289,7 +274,7 @@ fun SongsTab(
 
     ) {
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
+    rememberCoroutineScope()
 
 
     LazyRow(
@@ -302,9 +287,9 @@ fun SongsTab(
                 selected = index == selectedIndex,
                 onClick = {
                     onClick(index)
-                    coroutineScope.launch {
-                        listState.animateScrollToItem(index)
-                    }
+//                    coroutineScope.launch {
+//                        listState.animateScrollToItem(index)
+//                    }
                 },
                 label = {
                     Text(

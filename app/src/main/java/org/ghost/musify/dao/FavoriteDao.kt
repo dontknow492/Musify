@@ -70,4 +70,51 @@ interface FavoriteDao {
         query: String,
         sortBy: String
     ): PagingSource<Int, SongWithAlbumAndArtist>
+
+    //
+    suspend fun getFavoriteSongsList(
+        query: String,
+        sortBy: SortBy,
+        sortOrder: SortOrder
+    ): List<SongWithAlbumAndArtist> {
+        return if (sortOrder == SortOrder.ASCENDING) {
+            getFavoriteSongsAscList(query, sortBy.value)
+        } else {
+            getFavoriteSongsDescList(query, sortBy.value)
+        }
+    }
+
+    @Transaction
+    @Query(
+        """
+            SELECT s.* FROM songs s
+            INNER JOIN favorite_songs f ON s.id = f.song_id
+            WHERE s.title LIKE '%' || :query || '%'
+            ORDER BY
+                CASE WHEN :sortBy = 'added_at' THEN f.added_at END ASC,
+                CASE WHEN :sortBy = 'title' THEN s.title END ASC,
+                CASE WHEN :sortBy = 'duration' THEN s.duration END ASC
+        """
+    )
+    suspend fun getFavoriteSongsAscList(
+        query: String,
+        sortBy: String
+    ): List<SongWithAlbumAndArtist>
+
+    @Transaction
+    @Query(
+        """
+            SELECT s.* FROM songs s
+            INNER JOIN favorite_songs f ON s.id = f.song_id
+            WHERE s.title LIKE '%' || :query || '%'
+            ORDER BY
+                CASE WHEN :sortBy = 'added_at' THEN f.added_at END DESC,
+                CASE WHEN :sortBy = 'title' THEN s.title END DESC,
+                CASE WHEN :sortBy = 'duration' THEN s.duration END DESC
+        """
+    )
+    suspend fun getFavoriteSongsDescList(
+        query: String,
+        sortBy: String
+    ): List<SongWithAlbumAndArtist>
 }

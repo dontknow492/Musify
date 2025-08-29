@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
-import org.ghost.musify.ui.screens.items.AlbumItem
-import org.ghost.musify.viewModels.AlbumViewModel
+import org.ghost.musify.ui.screens.components.AlbumItem
+import org.ghost.musify.viewModels.home.AlbumViewModel
 
 @Composable
 fun AlbumScreen(

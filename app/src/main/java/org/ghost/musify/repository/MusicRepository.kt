@@ -27,6 +27,8 @@ import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
+import org.ghost.musify.ui.screens.models.SongFilter
+import org.ghost.musify.ui.screens.models.SongsCategory
 import javax.inject.Inject
 
 class MusicRepository @Inject constructor(
@@ -420,6 +422,53 @@ class MusicRepository @Inject constructor(
     fun getPlaylistSongsCount(playlistId: Long?): Flow<Int> {
         if (playlistId == null) return flowOf(0)
         return playlistDao.getPlaylistSongsCount(playlistId)
+    }
+
+    suspend fun getAllSongsList(filter: SongFilter): List<SongWithAlbumAndArtist> {
+        return when (filter.category) {
+            is SongsCategory.Album -> songDao.getAllSongsList(
+                query = filter.searchQuery ?: "",
+                sortBy = filter.sortBy,
+                albumId = filter.category.albumId,
+                artist = "",
+                artistId = null,
+                album = "",
+                sortOrder = filter.sortOrder
+            )
+
+            is SongsCategory.AllSongs -> songDao.getAllSongsList(
+                query = filter.searchQuery ?: "",
+                sortBy = filter.sortBy,
+                albumId = null,
+                artist = "",
+                artistId = null,
+                album = "",
+                sortOrder = filter.sortOrder
+            )
+
+            is SongsCategory.Artist -> songDao.getAllSongsList(
+                query = filter.searchQuery ?: "",
+                sortBy = filter.sortBy,
+                albumId = null,
+                artist = filter.category.artistName,
+                artistId = null,
+                album = "",
+                sortOrder = filter.sortOrder
+            )
+
+            is SongsCategory.LikedSongs -> favoriteDao.getFavoriteSongsList(
+                query = filter.searchQuery ?: "",
+                sortBy = filter.sortBy,
+                sortOrder = filter.sortOrder
+            )
+
+            is SongsCategory.Playlist -> playlistDao.getSongsInPlaylistList(
+                playlistId = filter.category.playlistId,
+                query = filter.searchQuery ?: "",
+                sortBy = filter.sortBy,
+                sortOrder = filter.sortOrder
+            )
+        }
     }
 
 }

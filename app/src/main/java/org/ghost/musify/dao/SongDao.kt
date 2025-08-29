@@ -210,5 +210,82 @@ interface SongDao {
     )
     fun getArtistSongsCount(artistName: String): Flow<Int>
 
+
+    // one time fetch
+    suspend fun getAllSongsList(
+        query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
+        sortBy: SortBy,
+        sortOrder: SortOrder
+    ): List<SongWithAlbumAndArtist> {
+        return if (sortOrder == SortOrder.ASCENDING) {
+            getSongsAscList(query, artist, album, artistId, albumId, sortBy.value)
+        } else {
+            getSongsDescList(query, artist, album, artistId, albumId, sortBy.value)
+        }
+    }
+
+    // The new suspend function for ASCENDING order
+    @Transaction
+    @Query(
+        """
+    SELECT songs.* FROM songs
+        INNER JOIN artists ON songs.artist_id = artists.id
+        INNER JOIN albums ON songs.album_id = albums.id
+        WHERE
+            songs.title LIKE '%' || :query || '%'
+            AND artists.name LIKE '%' || :artist || '%'
+            AND albums.title LIKE '%' || :album || '%'
+            AND (:artistId IS NULL OR songs.artist_id = :artistId)
+            AND (:albumId IS NULL OR songs.album_id = :albumId)
+    ORDER BY
+        CASE WHEN :sortBy = 'title' THEN songs.title END ASC,
+        CASE WHEN :sortBy = 'duration' THEN songs.duration END ASC,
+        CASE WHEN :sortBy = 'year' THEN songs.year END ASC,
+        CASE WHEN :sortBy = 'date_added' THEN songs.date_added END ASC,
+        CASE WHEN :sortBy = 'date_modified' THEN songs.date_modified END ASC
+"""
+    )
+    suspend fun getSongsAscList(
+        query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
+        sortBy: String
+    ): List<SongWithAlbumAndArtist>
+
+    // The new suspend function for DESCENDING order
+    @Transaction
+    @Query(
+        """
+        SELECT songs.* FROM songs
+        INNER JOIN artists ON songs.artist_id = artists.id
+        INNER JOIN albums ON songs.album_id = albums.id
+        WHERE
+            songs.title LIKE '%' || :query || '%'
+            AND artists.name LIKE '%' || :artist || '%'
+            AND albums.title LIKE '%' || :album || '%'
+            AND (:artistId IS NULL OR songs.artist_id = :artistId)
+            AND (:albumId IS NULL OR songs.album_id = :albumId)
+        ORDER BY
+            CASE WHEN :sortBy = 'title' THEN songs.title END DESC,
+            CASE WHEN :sortBy = 'duration' THEN songs.duration END DESC,
+            CASE WHEN :sortBy = 'year' THEN songs.year END DESC,
+            CASE WHEN :sortBy = 'date_added' THEN songs.date_added END DESC,
+            CASE WHEN :sortBy = 'date_modified' THEN songs.date_modified END DESC
+"""
+    )
+    suspend fun getSongsDescList(
+        query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
+        sortBy: String
+    ): List<SongWithAlbumAndArtist>
 }
 

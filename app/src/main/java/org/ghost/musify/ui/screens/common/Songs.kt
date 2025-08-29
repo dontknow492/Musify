@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.paging.compose.LazyPagingItems
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
-import org.ghost.musify.ui.screens.items.SongItem
+import org.ghost.musify.ui.screens.components.SongItem
 import org.ghost.musify.utils.getSongUri
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -19,6 +19,7 @@ fun SongsScreen(
     songs: LazyPagingItems<SongWithAlbumAndArtist>,
     item: @Composable () -> Unit = {},
     onSongClick: (Long) -> Unit = {},
+//    playerViewModel: PlayerViewModel = hiltViewModel()
 ) {
     LazyColumn(
         modifier = modifier
@@ -34,6 +35,12 @@ fun SongsScreen(
                     songWithAlbumAndArtist = song,
                     coverArtUri = getSongUri(song.song.id),
                     onCardClick = {
+//                        playerViewModel.onSongSelected(
+//                            it,
+//                            SongFilter(
+//                                SongsCategory.AllSongs,
+//                            )
+//                        )
                         onSongClick(it)
                         Log.d("HomeScreen", "onCardClick: $it")
                     },

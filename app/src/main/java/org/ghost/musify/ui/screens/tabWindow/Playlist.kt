@@ -43,8 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.rememberAsyncImagePainter
-import org.ghost.musify.ui.screens.items.PlaylistItem
-import org.ghost.musify.viewModels.PlaylistViewModel
+import org.ghost.musify.ui.screens.components.PlaylistItem
+import org.ghost.musify.viewModels.home.PlaylistViewModel
 
 @Composable
 fun PlaylistScreen(

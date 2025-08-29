@@ -81,6 +81,13 @@ dependencies {
     implementation(libs.androidx.room.paging)
     ksp(libs.androidx.room.compiler)
 
+    //serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    //guava
+    implementation(libs.guava)
+    implementation(libs.kotlinx.coroutines.guava)
+
 
 
     // Image Loading

@@ -1,4 +1,4 @@
-package org.ghost.musify.viewModels
+package org.ghost.musify.viewModels.home
 
 //import dagger.hilt.android.internal.Contexts.getApplication
 import android.content.ComponentName
@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -28,7 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MusicViewModel @Inject constructor(
     private val repository: MusicRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private var mediaController: MediaController? = null
@@ -98,7 +99,7 @@ class MusicViewModel @Inject constructor(
             Log.d("MusicViewModel", "Playback state changed to: $stateString")
         }
 
-        override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+        override fun onPlayerError(error: PlaybackException) {
             // This is the most important one!
             Log.e("MusicViewModel", "Player Error: ${error.message}", error)
         }

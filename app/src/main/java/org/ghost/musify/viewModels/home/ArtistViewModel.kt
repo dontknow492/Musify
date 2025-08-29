@@ -1,4 +1,4 @@
-package org.ghost.musify.viewModels
+package org.ghost.musify.viewModels.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
