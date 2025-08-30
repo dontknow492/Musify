@@ -4,10 +4,8 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -50,7 +48,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.launch
 import org.ghost.musify.R
-import org.ghost.musify.ui.screens.common.SongList
 import org.ghost.musify.ui.screens.common.SongsScreen
 import org.ghost.musify.ui.screens.models.Tab
 import org.ghost.musify.ui.screens.tabWindow.AlbumScreen

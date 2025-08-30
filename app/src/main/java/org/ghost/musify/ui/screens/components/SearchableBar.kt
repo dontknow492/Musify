@@ -158,7 +158,7 @@ fun SearchableAppBar(
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-    ){
+    ) {
         IconButton(
             onClick = onBackClick
         ) {

@@ -1,5 +1,6 @@
 package org.ghost.musify.repository
 
+import android.util.Log
 import androidx.media3.session.MediaController
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.flow.Flow
@@ -30,5 +31,6 @@ class MediaControllerRepository @Inject constructor(
      */
     val mediaController: Flow<MediaController> = flow {
         emit(controllerFuture.await())
+        Log.d("MediaControllerRepository", "MediaController connected")
     }
 }

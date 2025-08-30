@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -26,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -35,12 +33,14 @@ import androidx.navigation.compose.composable
 import org.ghost.musify.ui.screens.BottomPlayer
 import org.ghost.musify.ui.screens.HomeScreen
 import org.ghost.musify.ui.screens.HomeTopAppBar
-import org.ghost.musify.ui.screens.PlayerScreen
+import org.ghost.musify.ui.screens.PlayerWindow
 import org.ghost.musify.ui.screens.components.AppNavigationBar
-import org.ghost.musify.ui.screens.components.SearchableTopAppBar
+import org.ghost.musify.ui.screens.models.SongFilter
+import org.ghost.musify.ui.screens.models.SongsCategory
 import org.ghost.musify.ui.screens.songs.AlbumSongs
 import org.ghost.musify.ui.screens.songs.ArtistSongs
 import org.ghost.musify.ui.screens.songs.PlaylistSongs
+import org.ghost.musify.viewModels.PlayerViewModel
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -71,7 +71,7 @@ fun AppNavigation(
                 AnimatedVisibility(true) {
                     val bottomModifier = if (show) Modifier else Modifier
                         .background(MaterialTheme.colorScheme.surfaceContainer)
-                            .windowInsetsPadding(WindowInsets.navigationBars)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
                     Column(
                         modifier = bottomModifier
 //                            .windowInsetsPadding(WindowInsets.navigationBars)
@@ -86,7 +86,7 @@ fun AppNavigation(
                                 )
                             )
                         }
-                        if(show){
+                        if (show) {
                             HorizontalDivider()
                         }
                         AnimatedVisibility(show) {
@@ -107,7 +107,10 @@ fun AppNavigation(
                 NavHost(
                     navController = navController,
                     startDestination = startDestination,
-                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+                    modifier = Modifier.padding(
+                        bottom = innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues()
+                            .calculateBottomPadding()
+                    )
                 ) {
                     composable<NavScreen.Home> {
                         LaunchedEffect(Unit) {
@@ -168,7 +171,13 @@ fun AppNavigation(
                         LaunchedEffect(Unit) {
                             currentScreen = NavScreen.PlayerScreen()
                         }
-                        PlayerScreen()
+                        val playerViewModel: PlayerViewModel = hiltViewModel()
+                        playerViewModel.playSongFromFilter(
+                            0, SongFilter(category = SongsCategory.AllSongs)
+                        )
+//    )
+                        PlayerWindow(viewModel = playerViewModel)
+//                        PlayerScreen()
                     }
                 }
             }

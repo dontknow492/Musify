@@ -1,8 +1,8 @@
 package org.ghost.musify.ui.screens
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -19,37 +19,40 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AddCircle
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.List
-import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -61,91 +64,205 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.error
 import org.ghost.musify.R
+import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
+import org.ghost.musify.ui.screens.components.SongItem
+import org.ghost.musify.ui.screens.models.SongFilter
+import org.ghost.musify.ui.screens.models.SongsCategory
+import org.ghost.musify.utils.DynamicThemeFromImage
+import org.ghost.musify.utils.cacheEmbeddedArt
+import org.ghost.musify.utils.getSongUri
 import org.ghost.musify.utils.toFormattedDuration
-import kotlin.math.absoluteValue
+import org.ghost.musify.viewModels.PlayerStatus
+import org.ghost.musify.viewModels.PlayerUiState
+import org.ghost.musify.viewModels.PlayerViewModel
+
+
 
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PlayerScreen(modifier: Modifier = Modifier) {
+fun PlayerWindow(
+    modifier: Modifier = Modifier,
+    viewModel: PlayerViewModel = hiltViewModel()
+) {
+    val playbackQueue by viewModel.playbackQueue.collectAsState()
+    var isBottomSheetVisible by remember { mutableStateOf(false) }
+    val onBackClick: () -> Unit = {}
+    val onQueueListClick: () -> Unit = {
+        isBottomSheetVisible = true
+    }
+
+
+
+    Log.d("PlayerWindow", "PlayerWindow: ${playbackQueue.size}")
+
     Scaffold { innerPadding ->
         Column(
-            modifier = Modifier.background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.surfaceVariant,
+                        )
                     )
                 )
-            ).padding(innerPadding)
-        ){
+                .padding(innerPadding)
+        ) {
             PlayerScreenTopBar(
                 modifier = Modifier
-                    .fillMaxWidth().padding(horizontal = 12.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                onBackClick = onBackClick,
+                onQueueListClick = onQueueListClick
             )
             PlayerScreenItem(
-                modifier = Modifier
+                modifier = Modifier.weight(1f),
+                viewModel = viewModel
             )
-        }
 
+        }
+//
     }
+
+    if (isBottomSheetVisible) {
+        Log.d("PlayerWindow", "PlayerWindow: BottomSheet is visible")
+        PlayerBottomSheet(modifier = modifier, songs = playbackQueue) {
+            isBottomSheetVisible = false
+        }
+    }
+
+
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-@Preview(showSystemUi = true)
-fun PlayerScreenItem(modifier: Modifier = Modifier) {
-    val iconSizeSmall = 20.dp
+fun PlayerBottomSheet(
+    modifier: Modifier = Modifier,
+    songs: List<SongWithAlbumAndArtist>,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss
+    ) {
+        // 1. Add state to hold and remember the search query
+        var searchQuery by rememberSaveable { mutableStateOf("") }
+
+        // 2. Filter the list based on the search query.
+        // This remembers the result unless the query or the original songs list changes.
+        val filteredSongs = remember(searchQuery, songs) {
+            if (searchQuery.isBlank()) {
+                songs
+            } else {
+                songs.filter { songWithAlbumAndArtist ->
+                    // You can search by title, artist, or album
+                    songWithAlbumAndArtist.song.title.contains(searchQuery, ignoreCase = true) ||
+                            songWithAlbumAndArtist.artist.name.contains(
+                                searchQuery,
+                                ignoreCase = true
+                            )
+                }
+            }
+        }
+
+        Column(modifier = modifier) {
+            // 3. Add the TextField for the search bar UI
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                placeholder = { Text("Search in queue...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear Icon")
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(28.dp), // Pill shape
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent, // No underline
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
+                )
+            )
+
+            // 4. Use the filtered list in the LazyColumn
+            LazyColumn {
+                items(filteredSongs, key = { item -> item.song.id }) { song ->
+                    SongItem(
+                        songWithAlbumAndArtist = song,
+                        coverArtUri = null,
+                        isDraggable = false,
+                        onCardClick = {},
+                        onMenuCLick = {}
+                    )
+                }
+            }
+        }
+    }
+}
 
 
-    var currentProgress by remember { mutableLongStateOf(0) }
-
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun PlayerScreenItem(
+    modifier: Modifier = Modifier,
+    viewModel: PlayerViewModel,
+) {
 
     BoxWithConstraints(
         modifier = modifier
     ) {
         val width = maxWidth
         val height = maxHeight
-        if(width - height < 200.dp){
+        if (width - height < 200.dp) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
-            ){
+            ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(null)
-                        .error(R.drawable.artist_placeholder)
+                        .error(R.drawable.music_album_cover)
                         .build(),
                     contentDescription = "title",
                     modifier = Modifier
                         .weight(1.75f)
                         .padding(20.dp)
                         .clip(MaterialTheme.shapes.extraLarge),
-                    contentScale = ContentScale.FillHeight,
+                    contentScale = ContentScale.Fit,
                 )
                 PlayerInfo(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    viewModel = viewModel
                 )
             }
 
-        }
-        else{
+        } else {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
-            ){
+            ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(null)
@@ -158,11 +275,13 @@ fun PlayerScreenItem(modifier: Modifier = Modifier) {
                     contentScale = ContentScale.FillWidth,
                 )
                 PlayerInfo(
-                    modifier = Modifier.fillMaxHeight(0.8f)
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .fillMaxHeight(0.8f),
+                    viewModel = viewModel
                 )
             }
         }
-
 
 
     }
@@ -170,39 +289,63 @@ fun PlayerScreenItem(modifier: Modifier = Modifier) {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PlayerInfo(modifier: Modifier = Modifier) {
+fun PlayerInfo(
+    modifier: Modifier = Modifier,
+    viewModel: PlayerViewModel,
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val songWithAlbumAndArtist = uiState.currentSong
+    val songTitle = songWithAlbumAndArtist?.song?.title ?: "Unknown"
+    val songArtist = songWithAlbumAndArtist?.artist?.name ?: "Unknown"
+    val songAlbum = songWithAlbumAndArtist?.album?.title ?: "Unknown"
     val iconSizeLarge = 60.dp
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceEvenly,
 
-    ) {
-//        Spacer(modifier = Modifier.weight(1f))
+        ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Title of music",
-                style = MaterialTheme.typography.titleLarge
+                text = songTitle,
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "Artist A, Artist B, Artist C",
+                text = songArtist,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "Music Album",
+                text = songAlbum,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
-//        Spacer(modifier = Modifier.height(16.dp))
 
-        Row{
+        Row {
+            IconButton(
+                onClick = { viewModel.toggleFavorite() }
+            ) {
+                when(uiState.isFavorite){
+                    true -> Icon(
+                        imageVector = Icons.Outlined.Favorite,
+                        contentDescription = "favorite"
+                    )
+                    false -> Icon(
+                        imageVector = Icons.Outlined.FavoriteBorder,
+                        contentDescription = "favorite"
+                    )
+                }
+            }
 
             IconButton(
                 onClick = { /*TODO*/ }
@@ -232,31 +375,53 @@ fun PlayerInfo(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.weight(1f))
 
             IconButton(
-                onClick = { /*TODO*/ }
+                onClick = { viewModel.toggleRepeatMode() }
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.rounded_repeat_24),
-                    contentDescription = "repeat mode"
-                )
+                when(uiState.repeatMode){
+                    Player.REPEAT_MODE_OFF -> Icon(
+                        painter = painterResource(R.drawable.rounded_repeat_24),
+                        contentDescription = "repeat mode"
+                    )
+                    Player.REPEAT_MODE_ONE -> Icon(
+                        painter = painterResource(R.drawable.rounded_repeat_one_24),
+                        contentDescription = "repeat mode"
+                    )
+                    Player.REPEAT_MODE_ALL -> Icon(
+                        painter = painterResource(R.drawable.rounded_repeat_on_24),
+                        contentDescription = "repeat mode"
+                    )
+                    else -> Icon(
+                        painter = painterResource(R.drawable.rounded_repeat_24),
+                        contentDescription = "repeat mode"
+                        )
+                }
             }
             IconButton(
-                onClick = { /*TODO*/ }
+                onClick = { viewModel.toggleShuffleMode() }
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.rounded_shuffle_24),
-                    contentDescription = "shuffle"
-                )
+                when(uiState.isShuffleEnabled){
+                    true -> Icon(
+                        painter = painterResource(R.drawable.rounded_shuffle_on_24),
+                        contentDescription = "shuffle"
+                    )
+                    false -> Icon(
+                        painter = painterResource(R.drawable.rounded_shuffle_24),
+                        contentDescription = "shuffle"
+                    )
+                }
             }
 
         }
 
-//        Spacer(modifier = Modifier.height(32.dp))
 
         MusicProgressBar(
-            modifier = Modifier.padding(horizontal = 12.dp)
-        )
+            modifier = Modifier.padding(horizontal = 12.dp),
+            totalDurationMs = uiState.currentSong?.song?.duration?.toLong() ?: 0L,
+            currentDurationMs = uiState.currentPosition
+        ){
+            viewModel.onSeekTo(it.toLong())
+        }
 
-//        Spacer(modifier = Modifier.height(32.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -272,7 +437,8 @@ fun PlayerInfo(modifier: Modifier = Modifier) {
                 )
             }
             IconButton(
-                onClick = { /*TODO*/ }
+                onClick = { viewModel.onPreviousClicked() },
+                enabled = uiState.hasPrevious
             ) {
                 Icon(
                     painter = painterResource(R.drawable.round_skip_previous_24),
@@ -280,17 +446,30 @@ fun PlayerInfo(modifier: Modifier = Modifier) {
                     modifier = Modifier.size(iconSizeLarge)
                 )
             }
-            IconButton(
-                onClick = { /*TODO*/ }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.baseline_pause_24),
-                    contentDescription = "play/pause",
-                    modifier = Modifier.size(iconSizeLarge)
-                )
+
+            Box {
+                if(uiState.status == PlayerStatus.BUFFERING){
+                    CircularProgressIndicator()
+                }
+                else{
+                    IconButton(
+                        onClick = { viewModel.onPlayPauseClicked() },
+                    ) {
+                        Icon(
+                            painter = if (uiState.isPlaying)
+                                painterResource(R.drawable.baseline_pause_24)
+                            else
+                                painterResource(R.drawable.baseline_play_arrow_24),
+                            contentDescription = "play/pause",
+                            modifier = Modifier.size(iconSizeLarge)
+                        )
+                    }
+                }
+
             }
             IconButton(
-                onClick = { /*TODO*/ }
+                onClick = { viewModel.onNextClicked() },
+                enabled = uiState.hasNext
             ) {
                 Icon(
                     painter = painterResource(R.drawable.round_skip_next_24),
@@ -299,7 +478,7 @@ fun PlayerInfo(modifier: Modifier = Modifier) {
                 )
             }
             IconButton(
-                onClick = { /*TODO*/ }
+                onClick = {  }
             ) {
                 Icon(
                     painter = painterResource(R.drawable.rounded_bar_chart_24),
@@ -319,11 +498,12 @@ fun MusicProgressBar(
     totalDurationMs: Long = 0L,
     onValueChange: (Float) -> Unit = {}
 ) {
+    Log.d("MusicProgressBar", "MusicProgressBar: $currentDurationMs")
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ){
+    ) {
         Text(
             text = currentDurationMs.toFormattedDuration(),
             style = MaterialTheme.typography.bodyLarge,
@@ -361,10 +541,13 @@ fun CircularProgressBar(
     contentColor: Color = LocalContentColor.current,
 
 
-) {
-    check(range.contains(currentProgress)){
-        "currentProgress value ($currentProgress) is outside of the specified range $range"
+    ) {
+    val currentProgress = if(! range.contains(currentProgress)){
+        range.start
+    } else{
+        currentProgress
     }
+
     Canvas(
         modifier = modifier
             .pointerInput(range) { // The key for handling user input
@@ -399,7 +582,7 @@ fun CircularProgressBar(
         val barHeight = height.div(3)
         val radius = height.div(2)
 
-        val fillSize = (currentProgress / range.endInclusive) * width.minus(radius*2)
+        val fillSize = (currentProgress / range.endInclusive) * width.minus(radius * 2)
 
 
 
@@ -425,7 +608,7 @@ fun CircularProgressBar(
             sweepAngle = 360f,
             useCenter = false,
             topLeft = Offset(fillSize, 0f),
-            size = Size(radius*2, radius*2)
+            size = Size(radius * 2, radius * 2)
         )
         drawArc(
             color = contentColor,
@@ -445,15 +628,19 @@ fun CircularProgressBar(
 }
 
 @Composable
-fun PlayerScreenTopBar(modifier: Modifier = Modifier) {
+fun PlayerScreenTopBar(
+    modifier: Modifier = Modifier,
+    onBackClick: () -> Unit,
+    onQueueListClick: () -> Unit,
+) {
     val iconSize = 60.dp
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
-    ){
+    ) {
         IconButton(
-            onClick = {}
+            onClick = onBackClick
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
@@ -462,10 +649,10 @@ fun PlayerScreenTopBar(modifier: Modifier = Modifier) {
             )
         }
         IconButton(
-            onClick = {}
-        ){
+            onClick = onQueueListClick
+        ) {
             Icon(
-                imageVector = Icons.Outlined.FavoriteBorder,
+                painter = painterResource(R.drawable.rounded_queue_music_24),
                 contentDescription = "menu",
                 modifier = Modifier.size(iconSize)
             )

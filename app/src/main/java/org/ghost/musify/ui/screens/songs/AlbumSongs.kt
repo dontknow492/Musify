@@ -3,8 +3,6 @@ package org.ghost.musify.ui.screens.songs
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -15,7 +13,6 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import org.ghost.musify.ui.screens.common.SongList
-import org.ghost.musify.ui.screens.components.SearchableTopAppBar
 import org.ghost.musify.ui.screens.models.SongWindowData
 import org.ghost.musify.utils.DynamicThemeFromImage
 import org.ghost.musify.viewModels.songs.AlbumSongsViewModel
@@ -60,7 +57,6 @@ fun AlbumSongs(
             onFilterClick = {},
             onShuffleClick = {},
         )
-
 
 
     }

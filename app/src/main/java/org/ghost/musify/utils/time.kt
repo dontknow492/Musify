@@ -1,9 +1,6 @@
 package org.ghost.musify.utils
 
 //import android.annotation.SuppressLint
-import android.os.Build
-import androidx.annotation.RequiresApi
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 
@@ -26,7 +23,7 @@ fun Long.toFormattedDuration(): String {
 fun Int.toFormattedDuration(): String {
     // This function operates on the Long value it's called on (the milliseconds)
 
-    val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(this.times(1000L))
+    val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(this.toLong())
 
     val hours = TimeUnit.SECONDS.toHours(totalSeconds)
     val minutes = TimeUnit.SECONDS.toMinutes(totalSeconds) % 60

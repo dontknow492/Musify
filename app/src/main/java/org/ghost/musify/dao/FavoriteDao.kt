@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
 import org.ghost.musify.entity.FavoriteSongEntity
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
@@ -24,6 +25,10 @@ interface FavoriteDao {
 
     @Query("SELECT * FROM favorite_songs WHERE song_id = :songId")
     suspend fun isFavorite(songId: Long): FavoriteSongEntity?
+
+    // To this Flow-based function:
+    @Query("SELECT * FROM favorite_songs WHERE song_id = :songId")
+    fun isFavoriteFlow(songId: Long): Flow<FavoriteSongEntity?>
 
     fun getFavoriteSongs(
         query: String,

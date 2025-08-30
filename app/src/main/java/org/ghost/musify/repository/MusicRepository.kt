@@ -10,6 +10,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ghost.musify.dao.ArtistImageDao
 import org.ghost.musify.dao.FavoriteDao
@@ -43,6 +45,10 @@ class MusicRepository @Inject constructor(
         pageSize = 120,
         enablePlaceholders = true
     )
+    init{
+        Log.d("MusicRepository", "MusicRepository initialized")
+
+    }
 
     // --- Data Synchronization ---
 
@@ -52,6 +58,7 @@ class MusicRepository @Inject constructor(
      */
     suspend fun syncMediaStore() = withContext(Dispatchers.IO) {
         // Step 1: Fetch lightweight sync data (ID and timestamp) from both sources.
+        Log.d("MusicRepository", "syncMediaStore started")
         val mediaStoreSongsMap = scanMediaStoreForSyncInfo()
         val databaseSongsMap = songDao.getSongSyncInfo().associateBy({ it.id }, { it.dateModified })
 
@@ -84,6 +91,7 @@ class MusicRepository @Inject constructor(
             updateArtistsImage(songsToInsert["artistImages"] as List<ArtistImageEntity>)
 
         }
+        Log.d("MusicRepository", "syncMediaStore completed: ${idsToUpdateOrInsert.size} songs updated or inserted")
     }
 
     /**
@@ -350,7 +358,8 @@ class MusicRepository @Inject constructor(
         favoriteDao.removeFromFavorites(songId)
     }
 
-    suspend fun isFavorite(songId: Long): Boolean {
+    suspend fun isFavorite(songId: Long?): Boolean {
+        if (songId == null) return false
         return favoriteDao.isFavorite(songId) != null
     }
 
@@ -469,6 +478,15 @@ class MusicRepository @Inject constructor(
                 sortOrder = filter.sortOrder
             )
         }
+    }
+
+    fun isSongFavorite(songId: Long): Flow<Boolean> {
+        // Call the new DAO function that returns a Flow
+        return favoriteDao.isFavoriteFlow(songId)
+            .map { favoriteSongEntity ->
+                // Transform the result: if the entity is not null, it's a favorite.
+                favoriteSongEntity != null
+            }
     }
 
 }
