@@ -63,6 +63,21 @@ interface ArtistImageDao {
     ): PagingSource<Int, ArtistImageEntity>
 
 
+    @Query(
+        """
+        SELECT * FROM artists_image
+        WHERE name LIKE '%' || :query || '%'
+        ORDER BY
+            CASE WHEN :sortOrder = 'ASCENDING' THEN name END ASC,
+            CASE WHEN :sortOrder = 'DESCENDING' THEN name END DESC
+    """
+    )
+    suspend fun getAllArtistImagesAsList(
+        query: String = "",
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): List<ArtistImageEntity>
+
+
     // --- UTILITY & MAINTENANCE OPERATIONS ---
 
     /**

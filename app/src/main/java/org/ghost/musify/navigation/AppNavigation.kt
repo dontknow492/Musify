@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -25,15 +26,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import org.ghost.musify.ui.screens.BottomPlayer
+import org.ghost.musify.ui.screens.HistoryScreen
 import org.ghost.musify.ui.screens.HomeScreen
 import org.ghost.musify.ui.screens.HomeTopAppBar
 import org.ghost.musify.ui.screens.PlayerWindow
+import org.ghost.musify.ui.screens.SearchScreen
 import org.ghost.musify.ui.screens.components.AppNavigationBar
 import org.ghost.musify.ui.screens.models.SongFilter
 import org.ghost.musify.ui.screens.models.SongsCategory
@@ -41,6 +48,7 @@ import org.ghost.musify.ui.screens.songs.AlbumSongs
 import org.ghost.musify.ui.screens.songs.ArtistSongs
 import org.ghost.musify.ui.screens.songs.PlaylistSongs
 import org.ghost.musify.viewModels.PlayerViewModel
+import org.ghost.musify.viewModels.SearchViewModel
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -51,6 +59,7 @@ fun AppNavigation(
     startDestination: NavScreen = NavScreen.Home
 ) {
     var currentScreen by remember { mutableStateOf(startDestination) }
+    var searchViewModel: SearchViewModel = hiltViewModel()
     HomeTopAppBar()
     SharedTransitionLayout(
         modifier = modifier
@@ -109,7 +118,9 @@ fun AppNavigation(
                     startDestination = startDestination,
                     modifier = Modifier.padding(
                         bottom = innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues()
-                            .calculateBottomPadding()
+                            .calculateBottomPadding(),
+                        start = innerPadding.calculateLeftPadding(LocalLayoutDirection.current),
+                        end = innerPadding.calculateRightPadding(LocalLayoutDirection.current)
                     )
                 ) {
                     composable<NavScreen.Home> {
@@ -134,12 +145,14 @@ fun AppNavigation(
                         LaunchedEffect(Unit) {
                             currentScreen = NavScreen.Search
                         }
+                        SearchScreen(viewModel = searchViewModel)
 //                    currentScreen = NavScreen.Search
                     }
                     composable<NavScreen.History> {
                         LaunchedEffect(Unit) {
                             currentScreen = NavScreen.History
                         }
+                        HistoryScreen(viewModel = hiltViewModel(), onSongClick = {})
                     }
                     composable<NavScreen.Setting> {
                         LaunchedEffect(Unit) {

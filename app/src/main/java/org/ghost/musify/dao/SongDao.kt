@@ -172,6 +172,21 @@ interface SongDao {
         sortOrder: SortOrder
     ): PagingSource<Int, AlbumEntity>
 
+
+    @Query(
+        """
+        SELECT * FROM albums
+        WHERE title LIKE '%' || :query || '%'
+        ORDER BY 
+            CASE WHEN :sortOrder = 'ASCENDING' THEN title END ASC,
+            CASE WHEN :sortOrder = 'DESCENDING' THEN title END DESC
+    """
+    )
+    suspend fun getAllAlbumsAsList(
+        query: String,
+        sortOrder: SortOrder
+    ): List<AlbumEntity>
+
     @Query(
         """
         SELECT * FROM artists

@@ -1,18 +1,32 @@
 package org.ghost.musify.ui.screens.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.request.error
+import coil3.request.placeholder
+import org.ghost.musify.R
 
 @Composable
 fun CoverChangeableItem(
@@ -23,44 +37,44 @@ fun CoverChangeableItem(
     Card(
         modifier = modifier
     ) {
-        ConstraintLayout {
-            // Create references for the image and text
-            val (imageRef, nameRef) = createRefs()
+        Column(
+            modifier = modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             AsyncImage(
                 model = coverImage,
                 contentDescription = title,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .constrainAs(imageRef) {
-                        // Pin the image to the top of the layout
-                        top.linkTo(parent.top)
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                    }
+                    .fillMaxWidth()
+//                    .aspectRatio(1f) // Makes it a square
+                    .weight(1f) // Takes up the majority of the space
                     .background(Color.LightGray)
             )
-
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                // Note: TextAlign.Justify might not look good with a single line.
-                // Consider TextAlign.Center or TextAlign.Start.
                 textAlign = TextAlign.Center,
-                modifier = Modifier.constrainAs(nameRef) {
-                    // 1. Position the text below the image
-                    top.linkTo(imageRef.bottom, margin = 8.dp) // Add some margin
-
-                    // 2. Align the text's start/end with the image's start/end
-                    start.linkTo(imageRef.start)
-                    end.linkTo(imageRef.end)
-
-                    // 3. This is the key part: tell the text to fill the defined width
-                    width = Dimension.fillToConstraints
-                }
             )
         }
     }
 
 
+}
+
+@Preview(widthDp = 100, heightDp = 100)
+@Composable
+private fun CoverChangeableItemPreview() {
+    val image = ImageRequest.Builder(LocalContext.current)
+        .data(null)
+        .crossfade(true)
+        .placeholder(R.drawable.artist_placeholder)
+        .error(R.drawable.artist_placeholder)
+        .build()
+    CoverChangeableItem(
+        coverImage = image,
+        title = "Sample Title"
+    )
 }

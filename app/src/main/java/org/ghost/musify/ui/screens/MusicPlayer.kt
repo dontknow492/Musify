@@ -1,8 +1,11 @@
 package org.ghost.musify.ui.screens
 
+import android.net.Uri
 import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -19,33 +22,45 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AddCircle
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,15 +78,23 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import coil3.request.error
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ghost.musify.R
+import org.ghost.musify.entity.AlbumEntity
+import org.ghost.musify.entity.ArtistEntity
+import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.ui.screens.components.SongItem
 import org.ghost.musify.ui.screens.models.SongFilter
@@ -84,7 +107,13 @@ import org.ghost.musify.viewModels.PlayerStatus
 import org.ghost.musify.viewModels.PlayerUiState
 import org.ghost.musify.viewModels.PlayerViewModel
 
-
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import org.ghost.musify.ui.screens.dialog.MusicInfoDialog
+import org.ghost.musify.utils.formatFileSize
+import org.ghost.musify.utils.toFormattedDate
+import java.io.File
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -249,7 +278,7 @@ fun PlayerScreenItem(
                         .clip(MaterialTheme.shapes.extraLarge),
                     contentScale = ContentScale.Fit,
                 )
-                PlayerInfo(
+                PlayerBar(
                     modifier = Modifier.weight(1f),
                     viewModel = viewModel
                 )
@@ -274,7 +303,7 @@ fun PlayerScreenItem(
                         .clip(MaterialTheme.shapes.extraLarge),
                     contentScale = ContentScale.FillWidth,
                 )
-                PlayerInfo(
+                PlayerBar(
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .fillMaxHeight(0.8f),
@@ -289,10 +318,11 @@ fun PlayerScreenItem(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PlayerInfo(
+fun PlayerBar(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel,
 ) {
+    var isInfoDialogVisible by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
     val songWithAlbumAndArtist = uiState.currentSong
     val songTitle = songWithAlbumAndArtist?.song?.title ?: "Unknown"
@@ -348,7 +378,7 @@ fun PlayerInfo(
             }
 
             IconButton(
-                onClick = { /*TODO*/ }
+                onClick = { isInfoDialogVisible = true }
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Info,
@@ -380,20 +410,16 @@ fun PlayerInfo(
                 when(uiState.repeatMode){
                     Player.REPEAT_MODE_OFF -> Icon(
                         painter = painterResource(R.drawable.rounded_repeat_24),
-                        contentDescription = "repeat mode"
+                        contentDescription = "repeat mode off"
                     )
                     Player.REPEAT_MODE_ONE -> Icon(
                         painter = painterResource(R.drawable.rounded_repeat_one_24),
-                        contentDescription = "repeat mode"
+                        contentDescription = "repeat mode one"
                     )
                     Player.REPEAT_MODE_ALL -> Icon(
                         painter = painterResource(R.drawable.rounded_repeat_on_24),
-                        contentDescription = "repeat mode"
+                        contentDescription = "repeat mode all"
                     )
-                    else -> Icon(
-                        painter = painterResource(R.drawable.rounded_repeat_24),
-                        contentDescription = "repeat mode"
-                        )
                 }
             }
             IconButton(
@@ -428,14 +454,10 @@ fun PlayerInfo(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            IconButton(
-                onClick = { /*TODO*/ }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.rounded_volume_up_24),
-                    contentDescription = "volume"
-                )
-            }
+            VolumeControlButton(
+                uiState.volume,
+                onVolumeChange = { viewModel.setVolume(it) }
+            )
             IconButton(
                 onClick = { viewModel.onPreviousClicked() },
                 enabled = uiState.hasPrevious
@@ -487,6 +509,14 @@ fun PlayerInfo(
             }
         }
 //        Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    AnimatedVisibility(isInfoDialogVisible && uiState.currentSong != null) {
+        MusicInfoDialog(
+            songWithAlbumAndArtist = uiState.currentSong!!
+        ) {
+            isInfoDialogVisible = false
+        }
     }
 }
 
@@ -659,4 +689,73 @@ fun PlayerScreenTopBar(
 
         }
     }
+}
+
+
+
+
+
+@Composable
+fun VolumeControlButton(
+    volumeLevel: Float = 0.5f,
+    onVolumeChange: (Float) -> Unit = {}
+) {
+    // 1. State to control the visibility of the popup.
+    var showPopup by remember { mutableStateOf(false) }
+
+    // State for the slider's value.
+
+    // A Box is used to anchor the Popup to the Button.
+    Box {
+        // The button that triggers the popup.
+        IconButton(onClick = { showPopup = true }) {
+            when (volumeLevel) {
+                0f -> {
+                    Icon(painterResource(R.drawable.rounded_volume_off_24), contentDescription = "volume off")
+                }
+                in 0f..0.5f -> {
+                    Icon(painterResource(R.drawable.rounded_volume_down_24), contentDescription = "volume medium")
+                }
+                else -> {
+                    Icon(painterResource(R.drawable.rounded_volume_up_24), contentDescription = "Set Volume")
+                }
+            }
+        }
+
+        // The Popup is displayed conditionally based on the state.
+        if (showPopup) {
+            // 2. The Popup composable.
+            Popup(
+                // Position the popup right above the button.
+                alignment = Alignment.TopCenter,
+                // The lambda to execute when the user clicks outside the popup.
+                onDismissRequest = { showPopup = false },
+                // Optional: properties to control focus, etc.
+                properties = PopupProperties(focusable = true)
+            ) {
+                // 3. The content of the popup.
+                Card(
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp).width(200.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Master Volume", style = MaterialTheme.typography.titleMedium)
+                        Slider(
+                            value = volumeLevel,
+                            onValueChange = onVolumeChange
+                        )
+                        Text(text = "${(volumeLevel * 100).toInt()}%")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PlaylistDialog(){
+
 }

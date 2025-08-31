@@ -9,6 +9,7 @@ import androidx.room.Transaction
 import org.ghost.musify.entity.ArtistStatsEntity
 import org.ghost.musify.entity.HistoryEntity
 import org.ghost.musify.entity.SongStatsEntity
+import org.ghost.musify.entity.relation.HistoryWithSongDetails
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
@@ -133,4 +134,20 @@ interface HistoryAndStatsDao {
 
     @Query("SELECT * FROM artist_stats ORDER BY total_play_count DESC")
     fun getTopArtists(): PagingSource<Int, ArtistStatsEntity>
+
+
+    @Transaction
+    @Query("""
+        SELECT * FROM play_history
+        WHERE (:minTimestamp IS NULL OR played_at >= :minTimestamp)
+          AND (:maxTimestamp IS NULL OR played_at <= :maxTimestamp)
+        ORDER BY
+            CASE WHEN :sortOrder = 'ASCENDING' THEN played_at END ASC,
+            CASE WHEN :sortOrder = 'DESCENDING' THEN played_at END DESC
+    """)
+    fun getFullPlaybackHistory(
+        minTimestamp: Long? = null,
+        maxTimestamp: Long? = null,
+        sortOrder: SortOrder = SortOrder.DESCENDING
+    ): PagingSource<Int, HistoryWithSongDetails>
 }

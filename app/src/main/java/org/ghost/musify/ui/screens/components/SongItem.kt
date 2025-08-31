@@ -111,7 +111,6 @@ fun SongItem(
     onCardClick: (Long) -> Unit,
     onMenuCLick: (Long) -> Unit,
 ) {
-    val startPadding = if (isDraggable) 4.dp else 12.dp
     val song = songWithAlbumAndArtist.song
     val artist = songWithAlbumAndArtist.artist
     val album = songWithAlbumAndArtist.album
@@ -132,13 +131,7 @@ fun SongItem(
 
 
     Row(
-        modifier = Modifier
-            .padding(
-                start = startPadding,
-                end = 4.dp,
-                top = 12.dp,
-                bottom = 12.dp
-            )
+        modifier = modifier
             .clickable(onClick = { onCardClick(song.id) }),
         verticalAlignment = Alignment.CenterVertically
     ) {

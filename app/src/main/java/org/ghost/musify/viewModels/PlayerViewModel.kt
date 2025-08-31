@@ -3,6 +3,7 @@ package org.ghost.musify.viewModels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -118,6 +119,14 @@ class PlayerViewModel @Inject constructor(
             updatePlaybackQueue(timeline)
         }
 
+        override fun onAudioAttributesChanged(audioAttributes: AudioAttributes) {
+            super.onAudioAttributesChanged(audioAttributes)
+        }
+
+        override fun onVolumeChanged(volume: Float) {
+            updateStateFromController()
+        }
+
         override fun onPlayerError(error: PlaybackException) {
             Log.e("PlayerViewModel", "Player Error: ${error.message}", error)
         }
@@ -129,6 +138,8 @@ class PlayerViewModel @Inject constructor(
             mediaController = repository.mediaController.first()
             mediaController?.addListener(playerListener)
             isControllerReady.value = true
+
+
         }
     }
 
@@ -239,7 +250,7 @@ class PlayerViewModel @Inject constructor(
             controller.repeatMode = repeatMode
             controller.setMediaItems(mediaItems, startIndex, 0L)
             controller.prepare()
-            controller.play()
+//            controller.play()
 //            startProgressUpdater()
         }
     }
@@ -301,6 +312,7 @@ class PlayerViewModel @Inject constructor(
         // Coerce the value to ensure it's within the valid range [0.0, 1.0].
         val validVolume = volume.coerceIn(0f, 1f)
         mediaController?.volume = validVolume
+
     }
 
 

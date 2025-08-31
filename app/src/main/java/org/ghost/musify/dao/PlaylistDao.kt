@@ -42,6 +42,24 @@ interface PlaylistDao {
         sortOrder: SortOrder
     ): PagingSource<Int, PlaylistEntity>
 
+
+    @Query(
+        """
+    SELECT * FROM playlists
+    WHERE playlist_name LIKE '%' || :query || '%'
+    ORDER BY
+        CASE WHEN :sortBy = 'NAME' AND :sortOrder = 'ASCENDING' THEN playlist_name END ASC,
+        CASE WHEN :sortBy = 'NAME' AND :sortOrder = 'DESCENDING' THEN playlist_name END DESC,
+        CASE WHEN :sortBy = 'DATE_CREATED' AND :sortOrder = 'ASCENDING' THEN created_at END ASC,
+        CASE WHEN :sortBy = 'DATE_CREATED' AND :sortOrder = 'DESCENDING' THEN created_at END DESC
+"""
+    )
+    suspend fun getAllPlaylistsAsList(
+        query: String,
+        sortBy: SortBy,
+        sortOrder: SortOrder
+    ): List<PlaylistEntity>
+
     @Update
     suspend fun renamePlaylist(playlist: PlaylistEntity)
 

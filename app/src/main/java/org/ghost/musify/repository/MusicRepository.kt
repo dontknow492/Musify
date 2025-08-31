@@ -11,7 +11,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ghost.musify.dao.ArtistImageDao
 import org.ghost.musify.dao.FavoriteDao
@@ -26,6 +25,7 @@ import org.ghost.musify.entity.HistoryEntity
 import org.ghost.musify.entity.PlaylistEntity
 import org.ghost.musify.entity.PlaylistSongCrossRef
 import org.ghost.musify.entity.SongEntity
+import org.ghost.musify.entity.relation.HistoryWithSongDetails
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
@@ -488,5 +488,58 @@ class MusicRepository @Inject constructor(
                 favoriteSongEntity != null
             }
     }
+
+
+    suspend fun getAllSongsList(
+        query: String = "",
+        sortBy: SortBy = SortBy.TITLE,
+        sortOrder: SortOrder = SortOrder.ASCENDING,
+        artist: String = "",
+        artistId: Long? = null,
+        album: String = "",
+        albumId: Long? = null
+    ): List<SongWithAlbumAndArtist>{
+        return songDao.getAllSongsList(
+            query = query,
+            sortBy = sortBy,
+            albumId = albumId,
+            artist = artist,
+            artistId = artistId,
+            album = album,
+            sortOrder = sortOrder
+        )
+    }
+
+    suspend fun getAllArtistImageAsList(
+        query: String = "",
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): List<ArtistImageEntity> = artistImageDao.getAllArtistImagesAsList(
+        query = query,
+        sortOrder = sortOrder
+    )
+
+    suspend fun getAllPlaylistAsList(
+        query: String = "",
+        sortBy: SortBy = SortBy.TITLE,
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): List<PlaylistEntity> = playlistDao.getAllPlaylistsAsList(
+        query = query,
+        sortBy = sortBy,
+        sortOrder = sortOrder
+    )
+
+    suspend fun getAllAlbumsAsList(
+        query: String = "",
+        sortOrder: SortOrder = SortOrder.ASCENDING
+    ): List<AlbumEntity> = songDao.getAllAlbumsAsList(
+        query = query,
+        sortOrder = sortOrder
+    )
+
+    fun getFullHistoryPlayback(): Flow<PagingData<HistoryWithSongDetails>> = Pager(
+        config = pagingConfig,
+        pagingSourceFactory = { historyAndStatsDao.getFullPlaybackHistory() }
+    ).flow
+
 
 }
