@@ -17,13 +17,19 @@ import coil3.request.error
 import coil3.request.placeholder
 import org.ghost.musify.R
 import org.ghost.musify.ui.screens.common.SongList
+import org.ghost.musify.ui.screens.models.SongFilter
 import org.ghost.musify.ui.screens.models.SongWindowData
+import org.ghost.musify.ui.screens.models.SongsCategory
 import org.ghost.musify.utils.DynamicThemeFromImage
 import org.ghost.musify.viewModels.songs.ArtistSongsViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ArtistSongs(modifier: Modifier = Modifier, viewModel: ArtistSongsViewModel = hiltViewModel()) {
+fun ArtistSongs(
+    modifier: Modifier = Modifier,
+    viewModel: ArtistSongsViewModel = hiltViewModel(),
+    onSongClick: (Long, SongFilter) -> Unit,
+) {
     val uiState by viewModel.uiState.collectAsState()
     val imageData = uiState.artist?.imageUriId ?: uiState.artist?.imageUrl ?: Any()
     DynamicThemeFromImage(
@@ -53,7 +59,10 @@ fun ArtistSongs(modifier: Modifier = Modifier, viewModel: ArtistSongsViewModel =
                 modifier = modifier,
                 data = artistData,
                 onPlayClick = {},
-                onCardClick = {},
+                onCardClick = {
+                    if(uiState.artist == null) return@SongList
+                    onSongClick(it, SongFilter(category = SongsCategory.Artist(uiState.artist!!.name)))
+                },
                 onFilterClick = {},
                 onShuffleClick = {},
             )

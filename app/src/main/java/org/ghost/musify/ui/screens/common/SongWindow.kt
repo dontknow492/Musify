@@ -46,7 +46,7 @@ fun SongList(
     modifier: Modifier = Modifier,
     data: SongWindowData,
     onPlayClick: () -> Unit,
-    onCardClick: () -> Unit,
+    onCardClick: (Long) -> Unit,
     onFilterClick: () -> Unit,
     onShuffleClick: () -> Unit
 ) {
@@ -96,7 +96,8 @@ fun SongList(
                         onPlayClick = onPlayClick,
                         onShuffleClick = onShuffleClick
                     )
-                }
+                },
+                onSongClick = onCardClick
             )
         }
     }

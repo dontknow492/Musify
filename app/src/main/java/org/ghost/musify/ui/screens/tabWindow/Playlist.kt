@@ -44,6 +44,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.rememberAsyncImagePainter
 import org.ghost.musify.ui.screens.components.PlaylistItem
+import org.ghost.musify.ui.screens.dialog.CreatePlaylist
 import org.ghost.musify.viewModels.home.PlaylistViewModel
 
 @Composable
@@ -69,6 +70,7 @@ fun PlaylistScreen(
                 val playlist = playlists[index]
                 if (playlist != null) {
                     PlaylistItem(
+                        modifier = Modifier.height(200.dp),
                         playlist = playlist,
                         onPlaylistClick = onPlaylistClick,
                         coverImage = playlist.playlistImageUriId ?: playlist.playlistImageUrl
@@ -94,7 +96,7 @@ fun PlaylistScreen(
         }
     }
     AnimatedVisibility(isCreatingPlaylist) {
-        AddPlaylistDialog(
+        CreatePlaylist(
             onDismissRequest = { isCreatingPlaylist = false }
         ) { title, description, imageUriId, imageUrl ->
             viewModel.createPlaylist(title, description, imageUriId, imageUrl)

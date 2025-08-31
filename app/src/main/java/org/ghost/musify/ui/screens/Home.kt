@@ -49,6 +49,8 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.launch
 import org.ghost.musify.R
 import org.ghost.musify.ui.screens.common.SongsScreen
+import org.ghost.musify.ui.screens.models.SongFilter
+import org.ghost.musify.ui.screens.models.SongsCategory
 import org.ghost.musify.ui.screens.models.Tab
 import org.ghost.musify.ui.screens.tabWindow.AlbumScreen
 import org.ghost.musify.ui.screens.tabWindow.ArtistScreen
@@ -61,6 +63,7 @@ import org.ghost.musify.viewModels.home.MusicViewModel
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: MusicViewModel,
+    onCardClick: (Long, SongFilter) -> Unit = {_, _ -> },
     onAlbumClick: (Long) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
     onPlaylistClick: (Long) -> Unit = {},
@@ -134,7 +137,9 @@ fun HomeScreen(
                     pageState,
                 ) { page ->
                     when (page) {
-                        0 -> SongsScreen(modifier = Modifier.fillMaxSize(), allSongs)
+                        0 -> SongsScreen(modifier = Modifier.fillMaxSize(), allSongs, {}){ songId ->
+                            onCardClick(songId, SongFilter(SongsCategory.AllSongs))
+                        }
                         1 -> ArtistScreen(
                             modifier = Modifier.fillMaxSize(),
                             viewModel = hiltViewModel(),

@@ -15,7 +15,9 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import org.ghost.musify.ui.screens.common.SongList
+import org.ghost.musify.ui.screens.models.SongFilter
 import org.ghost.musify.ui.screens.models.SongWindowData
+import org.ghost.musify.ui.screens.models.SongsCategory
 import org.ghost.musify.utils.DynamicThemeFromImage
 import org.ghost.musify.viewModels.songs.PlaylistSongsViewModel
 
@@ -23,7 +25,8 @@ import org.ghost.musify.viewModels.songs.PlaylistSongsViewModel
 @Composable
 fun PlaylistSongs(
     modifier: Modifier = Modifier,
-    viewModel: PlaylistSongsViewModel = hiltViewModel()
+    viewModel: PlaylistSongsViewModel = hiltViewModel(),
+    onSongClick: (Long, SongFilter) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val imageData =
@@ -57,7 +60,10 @@ fun PlaylistSongs(
                 modifier = modifier,
                 data = playlistData,
                 onPlayClick = {},
-                onCardClick = {},
+                onCardClick = {
+                    if(uiState.playlist == null) return@SongList
+                    onSongClick(it, SongFilter(category = SongsCategory.Playlist(uiState.playlist!!.id)))
+                },
                 onFilterClick = {},
                 onShuffleClick = {},
             )

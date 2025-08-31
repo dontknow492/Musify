@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -232,7 +233,10 @@ fun PlayerBottomSheet(
             )
 
             // 4. Use the filtered list in the LazyColumn
-            LazyColumn {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp)
+            ) {
                 items(filteredSongs, key = { item -> item.song.id }) { song ->
                     SongItem(
                         songWithAlbumAndArtist = song,

@@ -1,6 +1,8 @@
 package org.ghost.musify.ui.screens.tabWindow
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.runtime.Composable
@@ -29,7 +31,11 @@ fun AlbumScreen(
         ) { index ->
             val album = albums[index]
             if (album != null) {
-                AlbumItem(album = album, onAlbumClick = onAlbumClick)
+                AlbumItem(
+                    modifier = Modifier.height(200.dp),
+                    album = album,
+                    onAlbumClick = onAlbumClick
+                )
             }
 
         }

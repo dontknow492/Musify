@@ -3,10 +3,12 @@ package org.ghost.musify.ui.screens.common
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.ui.screens.components.SongItem
@@ -24,6 +26,7 @@ fun SongsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             item()

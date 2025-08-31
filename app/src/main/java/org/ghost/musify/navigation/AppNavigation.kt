@@ -60,6 +60,14 @@ fun AppNavigation(
 ) {
     var currentScreen by remember { mutableStateOf(startDestination) }
     var searchViewModel: SearchViewModel = hiltViewModel()
+    val playerViewModel: PlayerViewModel = hiltViewModel()
+
+    val playSong: (Long, SongFilter) -> Unit = { songId, filter ->
+        playerViewModel.playSongFromFilter(songId, filter)
+        navController.navigate(NavScreen.PlayerScreen(songId))
+    }
+
+
     HomeTopAppBar()
     SharedTransitionLayout(
         modifier = modifier
@@ -130,6 +138,7 @@ fun AppNavigation(
 
                         HomeScreen(
                             viewModel = hiltViewModel(),
+                            onCardClick = playSong,
                             onAlbumClick = { albumId ->
                                 navController.navigate(NavScreen.AlbumSongs(albumId))
                             },
@@ -164,30 +173,32 @@ fun AppNavigation(
                             currentScreen =
                                 NavScreen.AlbumSongs(it.arguments?.getLong("albumId") ?: 0L)
                         }
-                        AlbumSongs()
+                        AlbumSongs(
+                            onSongClick = playSong
+                        )
                     }
                     composable<NavScreen.ArtistSongs> {
                         LaunchedEffect(Unit) {
                             currentScreen =
                                 NavScreen.ArtistSongs(it.arguments?.getString("artistName") ?: "")
                         }
-                        ArtistSongs()
+                        ArtistSongs(
+                            onSongClick = playSong
+                        )
                     }
                     composable<NavScreen.PlaylistSongs> {
                         LaunchedEffect(Unit) {
                             currentScreen =
                                 NavScreen.PlaylistSongs(it.arguments?.getLong("playlistId") ?: 0L)
                         }
-                        PlaylistSongs()
+                        PlaylistSongs(
+                            onSongClick = playSong
+                        )
                     }
                     composable<NavScreen.PlayerScreen> {
                         LaunchedEffect(Unit) {
                             currentScreen = NavScreen.PlayerScreen()
                         }
-                        val playerViewModel: PlayerViewModel = hiltViewModel()
-                        playerViewModel.playSongFromFilter(
-                            0, SongFilter(category = SongsCategory.AllSongs)
-                        )
 //    )
                         PlayerWindow(viewModel = playerViewModel)
 //                        PlayerScreen()

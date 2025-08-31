@@ -1,6 +1,7 @@
 package org.ghost.musify.ui.screens.tabWindow
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.runtime.Composable
@@ -29,7 +30,10 @@ fun ArtistScreen(
         ) { index ->
             val artist = artists[index]
             if (artist != null) {
-                ArtistItem(artist = artist) { item ->
+                ArtistItem(
+                    modifier = Modifier.height(200.dp),
+                    artist = artist
+                ) { item ->
                     onArtistClick(item.name)
                 }
                 viewModel.updateArtistsImage(
