@@ -30,7 +30,7 @@ data class HistoryEntity(
     val playedAt: Long = System.currentTimeMillis(), // Timestamp when playback started
 
     @ColumnInfo(name = "duration_played")
-    val durationPlayed: Int, // How many milliseconds of the song were actually played
+    val durationPlayed: Long, // How many milliseconds of the song were actually played
 
     @ColumnInfo(name = "was_favorite_at_time_of_play")
     val wasFavorite: Boolean // Captures if the song was a favorite when played

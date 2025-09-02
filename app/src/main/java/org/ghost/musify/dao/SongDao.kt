@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import org.ghost.musify.entity.AlbumEntity
 import org.ghost.musify.entity.ArtistEntity
 import org.ghost.musify.entity.SongEntity
+import org.ghost.musify.entity.relation.SongDetailsWithLikeStatus
 import org.ghost.musify.entity.relation.SongSyncInfo
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
@@ -302,5 +303,43 @@ interface SongDao {
         albumId: Long?,
         sortBy: String
     ): List<SongWithAlbumAndArtist>
+
+
+//    @Query("SELECT * FROM songs WHERE id = :songId")
+//    suspend fun getSongWithAlbumAndArtistById(songId: Long): SongWithAlbumAndArtist?
+
+
+    /**
+     * Fetches all songs from the database, joining them with their "favorite" status.
+     *
+     * @Transaction is required because the result includes a @Relation from
+     * the nested SongWithAlbumAndArtist class.
+     *
+     * The LEFT JOIN ensures that all songs are returned, even if they are not
+     * in the favorite_songs table. If no match is found, the fields for
+     * FavoriteSongEntity will be null, and Room will correctly construct the
+     * SongWithLikeStatus object with a null 'liked' property.
+     */
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM songs 
+        LEFT JOIN favorite_songs ON songs.id = favorite_songs.song_id
+    """
+    )
+    fun getSongsWithLikeStatus(): PagingSource<Int, SongDetailsWithLikeStatus>
+
+    /**
+     * Fetches a single song by its ID, along with its "liked" status.
+     */
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM songs 
+        LEFT JOIN favorite_songs ON songs.id = favorite_songs.song_id
+        WHERE songs.id = :songId
+    """
+    )
+    fun getSongWithLikeStatusById(songId: Long): Flow<SongDetailsWithLikeStatus?>
 }
 

@@ -73,6 +73,14 @@ interface PlaylistDao {
     @Delete
     suspend fun removeSongFromPlaylist(join: PlaylistSongCrossRef)
 
+    @Query(
+        """
+        SELECT playlist_id FROM playlist_song_join
+        WHERE song_id = :songId
+    """
+    )
+    fun getPlaylistIdsForSong(songId: Long): Flow<List<Long>>
+
     // --- Complex Read (Get a playlist with all its songs) ---
     @Transaction
     @Query("SELECT * FROM playlists WHERE id = :playlistId")

@@ -113,5 +113,8 @@ interface ArtistImageDao {
         }
     }
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(artistItem: List<ArtistImageEntity>)
+
 
 }

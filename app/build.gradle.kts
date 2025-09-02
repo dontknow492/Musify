@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.runtime)
+    implementation(libs.androidx.paging.common)
     ksp(libs.hilt.android.compiler)
 
     // Database

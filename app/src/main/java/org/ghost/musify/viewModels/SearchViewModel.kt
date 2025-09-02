@@ -1,18 +1,31 @@
 package org.ghost.musify.viewModels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.request.error
+import coil3.request.placeholder
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.ghost.musify.entity.AlbumEntity
-import org.ghost.musify.entity.ArtistImageEntity
-import org.ghost.musify.entity.PlaylistEntity
+import org.ghost.musify.R
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.repository.MusicRepository
+import org.ghost.musify.utils.getAlbumArtUri
+import org.ghost.musify.viewModels.home.AlbumWithCover
+import org.ghost.musify.viewModels.home.ArtistWithCover
+import org.ghost.musify.viewModels.home.PlaylistWithCover
 import javax.inject.Inject
 
 
@@ -21,16 +34,17 @@ data class SearchUiState(
     val searchHistory: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val songs: List<SongWithAlbumAndArtist> = emptyList(),
-    val playlists: List<PlaylistEntity> = emptyList(),
-    val artists: List<ArtistImageEntity> = emptyList(),
-    val albums: List<AlbumEntity> = emptyList(),
+    val playlists: List<PlaylistWithCover> = emptyList(),
+    val artists: List<ArtistWithCover> = emptyList(),
+    val albums: List<AlbumWithCover> = emptyList(),
     val error: String? = null
 )
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val musicRepository: MusicRepository
+    private val musicRepository: MusicRepository,
+    @param: ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -98,9 +112,53 @@ class SearchViewModel @Inject constructor(
                 // Run all search queries in parallel for better performance.
                 coroutineScope {
                     val songsDeferred = async { musicRepository.getAllSongsList(query) }
-                    val playlistsDeferred = async { musicRepository.getAllPlaylistAsList(query) }
-                    val artistsDeferred = async { musicRepository.getAllArtistImageAsList(query) }
-                    val albumsDeferred = async { musicRepository.getAllAlbumsAsList(query) }
+                    val playlistsDeferred = async {
+                        musicRepository.getAllPlaylistAsList(query).map { playlist ->
+                            PlaylistWithCover(
+                                playlist = playlist,
+                                cover = ImageRequest.Builder(context)
+                                    .data(
+                                        playlist.playlistImageUriId ?: playlist.playlistImageUrl
+                                        ?: null
+                                    )
+                                    .crossfade(true)
+                                    .placeholder(R.drawable.playlist_placeholder)
+                                    .error(R.drawable.playlist_placeholder)
+                                    .build()
+                            )
+
+                        }
+                    }
+                    val artistsDeferred = async {
+                        musicRepository.getAllArtistImageAsList(query).map { artist ->
+                            ArtistWithCover(
+                                artist = artist,
+                                cover = ImageRequest.Builder(context)
+                                    .data(artist.imageUriId ?: artist.imageUrl)
+                                    .crossfade(true)
+                                    .placeholder(R.drawable.artist_placeholder)
+                                    .error(R.drawable.artist_placeholder)
+                                    .build()
+                            )
+                        }
+                    }
+                    val albumsDeferred = async {
+                        musicRepository.getAllAlbumsAsList(query).map { album ->
+                            AlbumWithCover(
+                                album = album,
+                                cover = ImageRequest.Builder(context)
+                                    .data(
+                                        album.albumImageUriId ?: album.albumImageUrl
+                                        ?: getAlbumArtUri(album.id)
+                                    )
+                                    .crossfade(true)
+                                    .placeholder(R.drawable.music_album_icon_2)
+                                    .error(R.drawable.music_album_icon_2)
+                                    .build()
+                            )
+                        }
+
+                    }
 
                     // Await the results and update the UI state.
                     _uiState.update {

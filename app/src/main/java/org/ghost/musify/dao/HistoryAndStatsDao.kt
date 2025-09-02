@@ -2,6 +2,7 @@ package org.ghost.musify.dao
 
 import androidx.paging.PagingSource
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -137,17 +138,46 @@ interface HistoryAndStatsDao {
 
 
     @Transaction
-    @Query("""
+    @Query(
+        """
         SELECT * FROM play_history
         WHERE (:minTimestamp IS NULL OR played_at >= :minTimestamp)
           AND (:maxTimestamp IS NULL OR played_at <= :maxTimestamp)
         ORDER BY
             CASE WHEN :sortOrder = 'ASCENDING' THEN played_at END ASC,
             CASE WHEN :sortOrder = 'DESCENDING' THEN played_at END DESC
-    """)
+    """
+    )
     fun getFullPlaybackHistory(
         minTimestamp: Long? = null,
         maxTimestamp: Long? = null,
         sortOrder: SortOrder = SortOrder.DESCENDING
     ): PagingSource<Int, HistoryWithSongDetails>
+
+
+    @Insert
+    fun insertAll(history: List<HistoryEntity>)
+
+    /**
+     * Deletes a specific history entry.
+     * @return The number of rows deleted (should be 1 if successful).
+     */
+    @Delete
+    suspend fun delete(history: HistoryEntity): Int
+
+    /**
+     * Deletes all entries from the play_history table.
+     * @return The total number of rows deleted.
+     */
+    @Query("DELETE FROM play_history")
+    suspend fun deleteAll(): Int
+
+    /**
+     * Deletes a history entry by its primary key (id).
+     * @param id The primary key of the entry to delete.
+     * @return The number of rows deleted (should be 1 if successful).
+     */
+    @Query("DELETE FROM play_history WHERE id = :id")
+    suspend fun deleteById(id: Long): Int
+
 }

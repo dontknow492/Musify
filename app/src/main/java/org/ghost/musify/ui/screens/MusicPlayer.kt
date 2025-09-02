@@ -1,8 +1,6 @@
 package org.ghost.musify.ui.screens
 
-import android.net.Uri
 import android.os.Build
-import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
@@ -26,27 +24,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.VerticalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AddCircle
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -58,11 +48,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -79,89 +66,79 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import coil3.request.crossfade
 import coil3.request.error
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.ghost.musify.R
-import org.ghost.musify.entity.AlbumEntity
-import org.ghost.musify.entity.ArtistEntity
-import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.ui.screens.components.SongItem
-import org.ghost.musify.ui.screens.models.SongFilter
-import org.ghost.musify.ui.screens.models.SongsCategory
+import org.ghost.musify.ui.screens.dialog.MusicInfoDialog
 import org.ghost.musify.utils.DynamicThemeFromImage
-import org.ghost.musify.utils.cacheEmbeddedArt
-import org.ghost.musify.utils.getSongUri
 import org.ghost.musify.utils.toFormattedDuration
 import org.ghost.musify.viewModels.PlayerStatus
-import org.ghost.musify.viewModels.PlayerUiState
 import org.ghost.musify.viewModels.PlayerViewModel
 
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
-import org.ghost.musify.ui.screens.dialog.MusicInfoDialog
-import org.ghost.musify.utils.formatFileSize
-import org.ghost.musify.utils.toFormattedDate
-import java.io.File
 
-
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun PlayerWindow(
     modifier: Modifier = Modifier,
-    viewModel: PlayerViewModel = hiltViewModel()
+    viewModel: PlayerViewModel = hiltViewModel(),
+    onBackClick: () -> Unit,
+    onAddToPlaylistClick: (Long) -> Unit,
 ) {
     val playbackQueue by viewModel.playbackQueue.collectAsState()
     var isBottomSheetVisible by remember { mutableStateOf(false) }
-    val onBackClick: () -> Unit = {}
     val onQueueListClick: () -> Unit = {
         isBottomSheetVisible = true
     }
+
+    val uiState by viewModel.uiState.collectAsState()
 
 
 
     Log.d("PlayerWindow", "PlayerWindow: ${playbackQueue.size}")
 
-    Scaffold { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.surfaceVariant,
+    DynamicThemeFromImage(
+        imageUrl = uiState.coverImage
+    ) {
+        Scaffold { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            )
                         )
                     )
+                    .padding(innerPadding)
+            ) {
+                PlayerScreenTopBar(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    onBackClick = onBackClick,
+                    onQueueListClick = onQueueListClick
                 )
-                .padding(innerPadding)
-        ) {
-            PlayerScreenTopBar(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                onBackClick = onBackClick,
-                onQueueListClick = onQueueListClick
-            )
-            PlayerScreenItem(
-                modifier = Modifier.weight(1f),
-                viewModel = viewModel
-            )
+                PlayerScreenItem(
+                    modifier = Modifier.weight(1f),
+                    viewModel = viewModel,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
+                )
 
+            }
+            //
         }
-//
     }
 
     if (isBottomSheetVisible) {
@@ -172,11 +149,10 @@ fun PlayerWindow(
     }
 
 
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun PlayerBottomSheet(
     modifier: Modifier = Modifier,
@@ -257,6 +233,7 @@ fun PlayerBottomSheet(
 fun PlayerScreenItem(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel,
+    onAddToPlaylistClick: (Long) -> Unit,
 ) {
 
     BoxWithConstraints(
@@ -284,7 +261,8 @@ fun PlayerScreenItem(
                 )
                 PlayerBar(
                     modifier = Modifier.weight(1f),
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
                 )
             }
 
@@ -311,7 +289,8 @@ fun PlayerScreenItem(
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .fillMaxHeight(0.8f),
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
                 )
             }
         }
@@ -325,6 +304,7 @@ fun PlayerScreenItem(
 fun PlayerBar(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel,
+    onAddToPlaylistClick: (Long) -> Unit,
 ) {
     var isInfoDialogVisible by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
@@ -369,11 +349,12 @@ fun PlayerBar(
             IconButton(
                 onClick = { viewModel.toggleFavorite() }
             ) {
-                when(uiState.isFavorite){
+                when (uiState.isFavorite) {
                     true -> Icon(
                         imageVector = Icons.Outlined.Favorite,
                         contentDescription = "favorite"
                     )
+
                     false -> Icon(
                         imageVector = Icons.Outlined.FavoriteBorder,
                         contentDescription = "favorite"
@@ -390,19 +371,11 @@ fun PlayerBar(
                 )
             }
             IconButton(
-                onClick = { /*TODO*/ }
+                onClick = { onAddToPlaylistClick(uiState.currentSong?.song?.id ?: 0L) }
             ) {
                 Icon(
                     imageVector = Icons.Outlined.AddCircle,
                     contentDescription = "add to playlist"
-                )
-            }
-            IconButton(
-                onClick = { /*TODO*/ }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.rounded_queue_music_24),
-                    contentDescription = "music queue"
                 )
             }
 
@@ -411,15 +384,17 @@ fun PlayerBar(
             IconButton(
                 onClick = { viewModel.toggleRepeatMode() }
             ) {
-                when(uiState.repeatMode){
+                when (uiState.repeatMode) {
                     Player.REPEAT_MODE_OFF -> Icon(
                         painter = painterResource(R.drawable.rounded_repeat_24),
                         contentDescription = "repeat mode off"
                     )
+
                     Player.REPEAT_MODE_ONE -> Icon(
                         painter = painterResource(R.drawable.rounded_repeat_one_24),
                         contentDescription = "repeat mode one"
                     )
+
                     Player.REPEAT_MODE_ALL -> Icon(
                         painter = painterResource(R.drawable.rounded_repeat_on_24),
                         contentDescription = "repeat mode all"
@@ -429,11 +404,12 @@ fun PlayerBar(
             IconButton(
                 onClick = { viewModel.toggleShuffleMode() }
             ) {
-                when(uiState.isShuffleEnabled){
+                when (uiState.isShuffleEnabled) {
                     true -> Icon(
                         painter = painterResource(R.drawable.rounded_shuffle_on_24),
                         contentDescription = "shuffle"
                     )
+
                     false -> Icon(
                         painter = painterResource(R.drawable.rounded_shuffle_24),
                         contentDescription = "shuffle"
@@ -448,7 +424,7 @@ fun PlayerBar(
             modifier = Modifier.padding(horizontal = 12.dp),
             totalDurationMs = uiState.currentSong?.song?.duration?.toLong() ?: 0L,
             currentDurationMs = uiState.currentPosition
-        ){
+        ) {
             viewModel.onSeekTo(it.toLong())
         }
 
@@ -474,10 +450,9 @@ fun PlayerBar(
             }
 
             Box {
-                if(uiState.status == PlayerStatus.BUFFERING){
+                if (uiState.status == PlayerStatus.BUFFERING) {
                     CircularProgressIndicator()
-                }
-                else{
+                } else {
                     IconButton(
                         onClick = { viewModel.onPlayPauseClicked() },
                     ) {
@@ -504,7 +479,7 @@ fun PlayerBar(
                 )
             }
             IconButton(
-                onClick = {  }
+                onClick = { }
             ) {
                 Icon(
                     painter = painterResource(R.drawable.rounded_bar_chart_24),
@@ -542,13 +517,14 @@ fun MusicProgressBar(
             text = currentDurationMs.toFormattedDuration(),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
+            // REMOVED .weight(1f) to let the text take its natural width
+            textAlign = TextAlign.End
         )
         CircularProgressBar(
             modifier = Modifier
                 .height(20.dp)
-                .weight(6f),
+                // CHANGED to .weight(1f) to fill ALL remaining space
+                .weight(1f),
             currentProgress = currentDurationMs.toFloat(),
             range = 0f..totalDurationMs.toFloat(),
             onValueChange = onValueChange
@@ -557,8 +533,8 @@ fun MusicProgressBar(
             text = totalDurationMs.toFormattedDuration(),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
+            // REMOVED .weight(1f) here as well
+            textAlign = TextAlign.Start
         )
     }
 }
@@ -576,9 +552,9 @@ fun CircularProgressBar(
 
 
     ) {
-    val currentProgress = if(! range.contains(currentProgress)){
+    val currentProgress = if (!range.contains(currentProgress)) {
         range.start
-    } else{
+    } else {
         currentProgress
     }
 
@@ -696,9 +672,6 @@ fun PlayerScreenTopBar(
 }
 
 
-
-
-
 @Composable
 fun VolumeControlButton(
     volumeLevel: Float = 0.5f,
@@ -715,13 +688,24 @@ fun VolumeControlButton(
         IconButton(onClick = { showPopup = true }) {
             when (volumeLevel) {
                 0f -> {
-                    Icon(painterResource(R.drawable.rounded_volume_off_24), contentDescription = "volume off")
+                    Icon(
+                        painterResource(R.drawable.rounded_volume_off_24),
+                        contentDescription = "volume off"
+                    )
                 }
+
                 in 0f..0.5f -> {
-                    Icon(painterResource(R.drawable.rounded_volume_down_24), contentDescription = "volume medium")
+                    Icon(
+                        painterResource(R.drawable.rounded_volume_down_24),
+                        contentDescription = "volume medium"
+                    )
                 }
+
                 else -> {
-                    Icon(painterResource(R.drawable.rounded_volume_up_24), contentDescription = "Set Volume")
+                    Icon(
+                        painterResource(R.drawable.rounded_volume_up_24),
+                        contentDescription = "Set Volume"
+                    )
                 }
             }
         }
@@ -743,7 +727,9 @@ fun VolumeControlButton(
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp).width(200.dp),
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .width(200.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("Master Volume", style = MaterialTheme.typography.titleMedium)
@@ -760,6 +746,6 @@ fun VolumeControlButton(
 }
 
 @Composable
-fun PlaylistDialog(){
+fun PlaylistDialog() {
 
 }

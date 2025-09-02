@@ -1,5 +1,6 @@
 package org.ghost.musify.ui.screens.tabWindow
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -8,8 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
-import org.ghost.musify.ui.screens.components.ArtistItem
+import org.ghost.musify.ui.screens.components.CoverChangeableItem
 import org.ghost.musify.viewModels.home.ArtistViewModel
+
 
 @Composable
 fun ArtistScreen(
@@ -17,7 +19,7 @@ fun ArtistScreen(
     viewModel: ArtistViewModel,
     onArtistClick: (String) -> Unit = {}
 ) {
-    val artists = viewModel.artists.collectAsLazyPagingItems()
+    val artistsWithCover = viewModel.artists.collectAsLazyPagingItems()
     LazyVerticalGrid(
         columns = GridCells.Adaptive(150.dp),
         modifier = modifier,
@@ -25,22 +27,22 @@ fun ArtistScreen(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(
-            artists.itemCount,
-            key = { index -> artists[index]?.name ?: index }
+            artistsWithCover.itemCount,
+            key = { index -> artistsWithCover[index]?.artist?.name ?: index }
         ) { index ->
-            val artist = artists[index]
-            if (artist != null) {
-                ArtistItem(
-                    modifier = Modifier.height(200.dp),
-                    artist = artist
-                ) { item ->
-                    onArtistClick(item.name)
-                }
-                viewModel.updateArtistsImage(
-                    name = artist.name,
-                    imageUrl = null,
-                    imageUriId = artist.imageUriId
+            val artistWithCover = artistsWithCover[index]
+            if (artistWithCover != null) {
+                val artist = artistWithCover.artist
+                CoverChangeableItem(
+                    modifier = modifier
+                        .clickable(
+                            onClick = { onArtistClick(artist.name) }
+                        )
+                        .height(200.dp),
+                    coverImage = artistWithCover.cover,
+                    title = artist.name,
                 )
+
             }
 
         }

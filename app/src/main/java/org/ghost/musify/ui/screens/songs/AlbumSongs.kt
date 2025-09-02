@@ -25,6 +25,7 @@ fun AlbumSongs(
     modifier: Modifier = Modifier,
     viewModel: AlbumSongsViewModel = hiltViewModel(),
     onSongClick: (Long, SongFilter) -> Unit,
+    onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     DynamicThemeFromImage(
@@ -57,11 +58,12 @@ fun AlbumSongs(
             data = albumData,
             onPlayClick = {},
             onCardClick = {
-                if(uiState.album == null) return@SongList
+                if (uiState.album == null) return@SongList
                 onSongClick(it, SongFilter(category = SongsCategory.Album(uiState.album!!.id)))
             },
             onFilterClick = {},
             onShuffleClick = {},
+            onBackClick = onBackClick
         )
 
 

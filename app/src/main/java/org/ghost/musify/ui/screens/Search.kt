@@ -1,19 +1,18 @@
 package org.ghost.musify.ui.screens
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -21,9 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -34,44 +30,57 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import org.ghost.musify.Song
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
-import org.ghost.musify.ui.screens.components.AlbumItem
-import org.ghost.musify.ui.screens.components.ArtistItem
-import org.ghost.musify.ui.screens.components.PlaylistItem
+import org.ghost.musify.ui.screens.components.CoverChangeableItem
 import org.ghost.musify.ui.screens.components.SongItem
 import org.ghost.musify.viewModels.SearchUiState
 import org.ghost.musify.viewModels.SearchViewModel
 
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun SearchScreen(
     modifier: Modifier = Modifier,
-    viewModel: SearchViewModel = hiltViewModel()
+    viewModel: SearchViewModel = hiltViewModel(),
+    onSongClick: (Long, List<SongWithAlbumAndArtist>) -> Unit = { _, _ -> },
+    onMenuClick: (Long) -> Unit,
+    onAlbumClick: (Long) -> Unit,
+    onArtistClick: (String) -> Unit,
+    onPlaylistClick: (Long) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val focusRequester = remember { FocusRequester() }
+
+    // This effect runs once when the screen is first displayed.
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     Column(modifier = modifier) {
         SearchBar(
-            modifier = Modifier.fillMaxWidth().padding(WindowInsets.statusBars.asPaddingValues()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(WindowInsets.statusBars.asPaddingValues())
+                .focusRequester(focusRequester),
             query = uiState.searchQuery,
             // FIX 1: Correctly wire up the ViewModel events
             onSearch = viewModel::onSearchTriggered,
@@ -88,14 +97,28 @@ fun SearchScreen(
                 CircularProgressIndicator()
             }
         } else {
-            SearchResultsContent(uiState)
+            SearchResultsContent(
+                uiState,
+                onSongClick = onSongClick,
+                onMenuClick = onMenuClick,
+                onAlbumClick = onAlbumClick,
+                onArtistClick = onArtistClick,
+                onPlaylistClick = onPlaylistClick
+            )
         }
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
-private fun SearchResultsContent(uiState: SearchUiState) {
+private fun SearchResultsContent(
+    uiState: SearchUiState,
+    onSongClick: (Long, List<SongWithAlbumAndArtist>) -> Unit = { _, _ -> },
+    onMenuClick: (Long) -> Unit = {},
+    onAlbumClick: (Long) -> Unit = {},
+    onArtistClick: (String) -> Unit = {},
+    onPlaylistClick: (Long) -> Unit = {},
+) {
     val cardSize: DpSize = DpSize(140.dp, 170.dp)
     val hasResults = uiState.songs.isNotEmpty() || uiState.playlists.isNotEmpty() ||
             uiState.artists.isNotEmpty() || uiState.albums.isNotEmpty()
@@ -108,7 +131,9 @@ private fun SearchResultsContent(uiState: SearchUiState) {
         if (!hasResults && uiState.searchQuery.isNotBlank()) {
             item {
                 Box(
-                    modifier = Modifier.fillParentMaxSize().padding(16.dp),
+                    modifier = Modifier
+                        .fillParentMaxSize()
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("No results found for \"${uiState.searchQuery}\"")
@@ -119,20 +144,29 @@ private fun SearchResultsContent(uiState: SearchUiState) {
         // Section for Songs
         songsSection(
             songs = uiState.songs,
-            onSongClick = { /* TODO: Handle song click */ },
-            onSongMenuClick = { /* TODO: Handle song menu click */ }
+            onSongClick = { songWithAlbumAndArtist ->
+                onSongClick(songWithAlbumAndArtist.song.id, uiState.songs)
+
+            },
+            onSongMenuClick = { songWithAlbumAndArtist ->
+                onMenuClick(songWithAlbumAndArtist.song.id)
+            }
         )
 
         // Section for Playlists
         horizontalScrollableSection(
             title = "Playlists",
             items = uiState.playlists,
-            key = { it.id },
-            itemContent = { playlist ->
-                PlaylistItem(
-                    modifier = Modifier.size(cardSize),
-                    playlist = playlist,
+            key = { it.playlist.id },
+            itemContent = { playlistWithCover ->
+                CoverChangeableItem(
+                    modifier = Modifier
+                        .clickable(onClick = { onPlaylistClick(playlistWithCover.playlist.id) })
+                        .size(cardSize),
+                    coverImage = playlistWithCover.cover,
+                    title = playlistWithCover.playlist.name,
                 )
+
             }
         )
 
@@ -140,11 +174,14 @@ private fun SearchResultsContent(uiState: SearchUiState) {
         horizontalScrollableSection(
             title = "Artists",
             items = uiState.artists,
-            key = { it.name },
-            itemContent = { artist ->
-                ArtistItem(
-                    modifier = Modifier.size(cardSize),
-                    artist = artist,
+            key = { it.artist.name },
+            itemContent = { artistWithCover ->
+                CoverChangeableItem(
+                    modifier = Modifier
+                        .clickable(onClick = { onArtistClick(artistWithCover.artist.name) })
+                        .size(cardSize),
+                    coverImage = artistWithCover.cover,
+                    title = artistWithCover.artist.name,
                 )
             }
         )
@@ -153,11 +190,18 @@ private fun SearchResultsContent(uiState: SearchUiState) {
         horizontalScrollableSection(
             title = "Albums",
             items = uiState.albums,
-            key = { it.id },
-            itemContent = { album ->
-                AlbumItem(
-                    modifier = Modifier.size(cardSize),
-                    album = album,
+            key = { it.album.id },
+            itemContent = { albumWithCover ->
+                CoverChangeableItem(
+                    modifier = Modifier
+                        .clickable(onClick = {
+                            Log.d("SearchScreen", "Album clicked: ${albumWithCover.album.id}")
+                            onAlbumClick(albumWithCover.album.id)
+                        }
+                        )
+                        .size(cardSize),
+                    coverImage = albumWithCover.cover,
+                    title = albumWithCover.album.title,
                 )
             }
         )
@@ -167,7 +211,7 @@ private fun SearchResultsContent(uiState: SearchUiState) {
 /**
  * A reusable helper to display the vertical list of songs.
  */
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 private fun LazyListScope.songsSection(
     songs: List<SongWithAlbumAndArtist>,
     onSongClick: (SongWithAlbumAndArtist) -> Unit,
@@ -181,8 +225,12 @@ private fun LazyListScope.songsSection(
             SongItem(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 songWithAlbumAndArtist = song,
-                onCardClick = { },
-                onMenuCLick = { }
+                onCardClick = {
+                    onSongClick(song)
+                },
+                onMenuCLick = {
+                    onSongMenuClick(song)
+                }
             )
         }
         item {
@@ -198,7 +246,7 @@ private fun <T> LazyListScope.horizontalScrollableSection(
     title: String,
     items: List<T>,
     key: (T) -> Any,
-    itemContent: @Composable (T) -> Unit
+    itemContent: @Composable (T) -> Unit,
 ) {
     if (items.isNotEmpty()) {
         item {
@@ -269,7 +317,9 @@ fun SearchBar(
     ) {
         // FIX 3: Use LazyColumn for better performance with lists
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().height(300.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp),
         ) {
             items(searchResults) { result ->
                 ListItem(

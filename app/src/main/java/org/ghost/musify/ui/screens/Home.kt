@@ -16,8 +16,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -27,8 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -40,7 +36,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,10 +58,12 @@ import org.ghost.musify.viewModels.home.MusicViewModel
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: MusicViewModel,
-    onCardClick: (Long, SongFilter) -> Unit = {_, _ -> },
+    onCardClick: (Long, SongFilter) -> Unit = { _, _ -> },
+    onMenuClick: (Long) -> Unit = {},
     onAlbumClick: (Long) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
     onPlaylistClick: (Long) -> Unit = {},
+    onSearchClick: () -> Unit = {}
 ) {
     val pageState = rememberPagerState(initialPage = 0) { 5 }
     val tabs = listOf(
@@ -100,17 +97,21 @@ fun HomeScreen(
     val allSongs = viewModel.music.collectAsLazyPagingItems()
     val favoriteSongs = viewModel.favoriteSongs.collectAsLazyPagingItems()
 
+
+
     Scaffold(
         modifier = modifier,
         topBar = {
             HomeTopAppBar(
-                search = search,
-                onSearchChange = onSearchChange,
-                onFilterClick = {}
+                onFilterClick = {},
+                onSearchClick = onSearchClick
             )
         }
     ) { innerPadding ->
-        val modifier = Modifier.padding(innerPadding)
+        val modifier = Modifier.padding(
+            top = innerPadding.calculateTopPadding(),
+            bottom = innerPadding.calculateBottomPadding()
+        )
         PullToRefreshBox(
             isRefreshing = false,
             onRefresh = {},
@@ -135,11 +136,19 @@ fun HomeScreen(
 
                 HorizontalPager(
                     pageState,
+                    beyondViewportPageCount = 5
                 ) { page ->
                     when (page) {
-                        0 -> SongsScreen(modifier = Modifier.fillMaxSize(), allSongs, {}){ songId ->
-                            onCardClick(songId, SongFilter(SongsCategory.AllSongs))
-                        }
+                        0 -> SongsScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            allSongs,
+                            item = {},
+                            onSongClick = { songId ->
+                                onCardClick(songId, SongFilter(SongsCategory.AllSongs))
+                            },
+                            onMenuClick = onMenuClick,
+                        )
+
                         1 -> ArtistScreen(
                             modifier = Modifier.fillMaxSize(),
                             viewModel = hiltViewModel(),
@@ -181,94 +190,27 @@ fun HomeScreen(
 @Composable
 fun HomeTopAppBar(
     modifier: Modifier = Modifier,
-    search: String = "",
-    onSearchChange: (String) -> Unit = {},
-    onFilterClick: () -> Unit = {}
+    onFilterClick: () -> Unit = {},
+    onSearchClick: () -> Unit,
 ) {
-    var isSearchVisible by rememberSaveable { mutableStateOf(false) }
     TopAppBar(
         modifier = modifier,
         title = {
-            if (!isSearchVisible) {
-                Text(
-                    "My Music",
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
-        },
-        navigationIcon = {
-            if (isSearchVisible) {
-                IconButton(
-                    onClick = { isSearchVisible = false }
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                        contentDescription = "Back",
-                        modifier = Modifier.size(34.dp)
-                    )
-                }
-            }
+            Text(
+                "My Music",
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.headlineMedium
+            )
         },
         actions = {
-            when (isSearchVisible) {
-                true -> {
-                    TextField(
-                        value = search,
-                        onValueChange = onSearchChange,
-                        placeholder = {
-                            Text(
-                                text = "Search",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    if (search.isNotEmpty()) {
-                                        onSearchChange("")
-                                    } else {
-                                        isSearchVisible = false
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(34.dp)
-                                )
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 60.dp),
-                        colors = TextFieldDefaults.colors(
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            disabledContainerColor = Color.Transparent
-
-                        )
-                    )
-                }
-
-                false -> {
-                    IconButton(
-                        onClick = {
-                            isSearchVisible = true
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(34.dp)
-                        )
-                    }
-                }
-
+            IconButton(
+                onClick = onSearchClick
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(34.dp)
+                )
             }
             IconButton(
                 onClick = onFilterClick

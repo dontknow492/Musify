@@ -48,7 +48,8 @@ fun SongList(
     onPlayClick: () -> Unit,
     onCardClick: (Long) -> Unit,
     onFilterClick: () -> Unit,
-    onShuffleClick: () -> Unit
+    onShuffleClick: () -> Unit,
+    onBackClick: () -> Unit,
 ) {
     val data = data.copy(
         title = if (data.title.isEmpty() || data.title == "<unknown>") "Unknown" else data.title,
@@ -81,8 +82,11 @@ fun SongList(
                 )
                 .padding(innerPadding)
         ) {
-            SearchableAppBar()
+            SearchableAppBar(
+                onBackClick = onBackClick
+            )
             SongsScreen(
+                modifier = Modifier.padding(12.dp),
                 songs = data.songs,
                 item = {
                     Heading(
@@ -92,7 +96,6 @@ fun SongList(
                         image = data.image,
                         count = data.count,
                         type = data.type,
-                        background = data.backgroundImage,
                         onPlayClick = onPlayClick,
                         onShuffleClick = onShuffleClick
                     )
@@ -111,7 +114,6 @@ fun Heading(
     title: String,
     body: String,
     image: ImageRequest,
-    background: ImageRequest? = null,
     count: Int = 0,
     type: String = "musics",
     onPlayClick: () -> Unit,
@@ -124,7 +126,7 @@ fun Heading(
     ) {
         val width = maxWidth
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (width > 600.dp) {

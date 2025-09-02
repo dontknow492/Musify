@@ -16,7 +16,21 @@ class MusicDBModule {
     @Singleton
     @Provides
     fun provideMusicDatabase(@ApplicationContext context: Context): MusifyDatabase {
-        return MusifyDatabase.Companion.getInstance(context)
+        val db = MusifyDatabase.Companion.getInstance(context)
+//        val artistItem = MockArtistImageData.generate(200)
+//        runBlocking {
+//            withContext(Dispatchers.IO) {
+//                db.artistImageDao().insertAll(artistItem)
+//            }
+//        }
+//        val histroyItems = MockHistoryData.generate(1000)
+//        runBlocking {
+//            withContext(Dispatchers.IO) {
+//                db.historyAndStatsDao().insertAll(histroyItems)
+//            }
+//        }
+        return db
+
     }
 
     @Singleton

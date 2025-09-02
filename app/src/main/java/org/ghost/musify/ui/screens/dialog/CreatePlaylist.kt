@@ -33,9 +33,9 @@ import org.ghost.musify.ui.screens.tabWindow.StandardAsyncImage
 
 @Composable
 fun CreatePlaylist(
-modifier: Modifier = Modifier,
-onDismissRequest: () -> Unit = {},
-onAddClick: (String, String, Long?, String?) -> Unit
+    modifier: Modifier = Modifier,
+    onDismissRequest: () -> Unit = {},
+    onAddClick: (String, String, Long?, String?) -> Unit = { title, description, imageUriId, imageUrl -> }
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }

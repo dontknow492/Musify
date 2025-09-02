@@ -12,17 +12,21 @@ import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
  */
 fun mapSongsToMediaItems(songs: List<SongWithAlbumAndArtist>): MutableList<MediaItem> {
     return songs.map { songData ->
-        val mediaMetadata = MediaMetadata.Builder()
-            .setTitle(songData.song.title)
-            .setArtist(songData.artist.name)
-            .setAlbumTitle(songData.album.title)
-            .build()
-
-        MediaItem.Builder()
-            .setMediaId(songData.song.id.toString())
-            .setUri(getSongUri(songData.song.id))
-            .setMediaMetadata(mediaMetadata)
-            .build()
-
+        mapSongToMediaItem(songData)
     }.toMutableList()
+}
+
+
+fun mapSongToMediaItem(song: SongWithAlbumAndArtist): MediaItem {
+    val mediaMetadata = MediaMetadata.Builder()
+        .setTitle(song.song.title)
+        .setArtist(song.artist.name)
+        .setAlbumTitle(song.album.title)
+        .build()
+
+    return MediaItem.Builder()
+        .setMediaId(song.song.id.toString())
+        .setUri(getSongUri(song.song.id))
+        .setMediaMetadata(mediaMetadata)
+        .build()
 }

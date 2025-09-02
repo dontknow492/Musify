@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -29,6 +28,7 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,13 +53,13 @@ import org.ghost.musify.entity.AlbumEntity
 import org.ghost.musify.entity.ArtistEntity
 import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
-import org.ghost.musify.utils.cacheEmbeddedArt
+import org.ghost.musify.utils.cacheEmbeddedArts
 import org.ghost.musify.utils.getAlbumArtUri
 import org.ghost.musify.utils.getSongUri
 import org.ghost.musify.utils.toFormattedDuration
 
 
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun SwipeableSongItem(
     modifier: Modifier = Modifier,
@@ -101,7 +101,8 @@ fun SwipeableSongItem(
 
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+//@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun SongItem(
     modifier: Modifier = Modifier,
@@ -114,6 +115,18 @@ fun SongItem(
     val song = songWithAlbumAndArtist.song
     val artist = songWithAlbumAndArtist.artist
     val album = songWithAlbumAndArtist.album
+
+    val context = LocalContext.current
+
+    // 1. Create a state variable to hold the result of your suspend function.
+    //    It starts as null.
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // 2. Use LaunchedEffect to run your suspend function safely.
+    //    'key1 = song.uri' ensures this effect re-runs only if the song changes.
+    LaunchedEffect(key1 = getSongUri(song.id)) {
+        imageUri = cacheEmbeddedArts(context, getSongUri(song.id))
+    }
 
 
     val artistName = if (artist.name.isNotEmpty() && artist.name != "<unknown>") {
@@ -150,7 +163,7 @@ fun SongItem(
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(
-                    cacheEmbeddedArt(LocalContext.current, getSongUri(song.id))
+                    imageUri
                 )
                 .crossfade(true)
                 .placeholder(R.drawable.empty_album)
@@ -220,7 +233,7 @@ fun SongItem(
 
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Preview(showSystemUi = true)
 @Composable
 private fun SongItemPreview() {

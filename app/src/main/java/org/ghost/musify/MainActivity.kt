@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -44,28 +43,14 @@ class MainActivity : ComponentActivity() {
             ) {
 //                val start = NavScreen.AlbumSongs(1312244804222984308L)
                 val start = NavScreen.Home
-                AppNavigation(
-                    navController = navController,
-                    startDestination = start
-                )
+                RequestAudioPermission {
+                    AppNavigation(
+                        navController = navController,
+                        startDestination = start
+                    )
+                }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MusifyTheme {
-        Greeting("Android")
     }
 }
 
@@ -80,7 +65,8 @@ fun RequestAudioPermission(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             listOf(
                 Manifest.permission.READ_MEDIA_AUDIO,
-                Manifest.permission.POST_NOTIFICATIONS
+                Manifest.permission.POST_NOTIFICATIONS,
+                Manifest.permission.READ_MEDIA_IMAGES,
             )
         } else {
             // On older versions, POST_NOTIFICATIONS is not needed

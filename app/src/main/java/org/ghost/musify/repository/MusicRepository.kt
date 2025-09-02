@@ -26,6 +26,7 @@ import org.ghost.musify.entity.PlaylistEntity
 import org.ghost.musify.entity.PlaylistSongCrossRef
 import org.ghost.musify.entity.SongEntity
 import org.ghost.musify.entity.relation.HistoryWithSongDetails
+import org.ghost.musify.entity.relation.SongDetailsWithLikeStatus
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
@@ -34,7 +35,7 @@ import org.ghost.musify.ui.screens.models.SongsCategory
 import javax.inject.Inject
 
 class MusicRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param: ApplicationContext private val context: Context,
     private val songDao: SongDao,
     private val playlistDao: PlaylistDao,
     private val historyAndStatsDao: HistoryAndStatsDao,
@@ -42,10 +43,14 @@ class MusicRepository @Inject constructor(
     private val artistImageDao: ArtistImageDao,
 ) {
     private val pagingConfig = PagingConfig(
-        pageSize = 120,
-        enablePlaceholders = true
+        pageSize = 30,
+        prefetchDistance = 10,
+        initialLoadSize = 40,
+        maxSize = 200,
+        enablePlaceholders = false,
     )
-    init{
+
+    init {
         Log.d("MusicRepository", "MusicRepository initialized")
 
     }
@@ -91,7 +96,10 @@ class MusicRepository @Inject constructor(
             updateArtistsImage(songsToInsert["artistImages"] as List<ArtistImageEntity>)
 
         }
-        Log.d("MusicRepository", "syncMediaStore completed: ${idsToUpdateOrInsert.size} songs updated or inserted")
+        Log.d(
+            "MusicRepository",
+            "syncMediaStore completed: ${idsToUpdateOrInsert.size} songs updated or inserted"
+        )
     }
 
     /**
@@ -498,7 +506,7 @@ class MusicRepository @Inject constructor(
         artistId: Long? = null,
         album: String = "",
         albumId: Long? = null
-    ): List<SongWithAlbumAndArtist>{
+    ): List<SongWithAlbumAndArtist> {
         return songDao.getAllSongsList(
             query = query,
             sortBy = sortBy,
@@ -536,10 +544,47 @@ class MusicRepository @Inject constructor(
         sortOrder = sortOrder
     )
 
-    fun getFullHistoryPlayback(): Flow<PagingData<HistoryWithSongDetails>> = Pager(
+    fun getFullHistoryPlayback(
+        minTimestamp: Long? = null,
+        maxTimestamp: Long? = null
+    ): Flow<PagingData<HistoryWithSongDetails>> = Pager(
         config = pagingConfig,
-        pagingSourceFactory = { historyAndStatsDao.getFullPlaybackHistory() }
+        pagingSourceFactory = {
+            historyAndStatsDao.getFullPlaybackHistory(
+                minTimestamp = minTimestamp,
+                maxTimestamp = maxTimestamp
+            )
+        }
     ).flow
+
+    suspend fun deleteHistory(entry: HistoryEntity) {
+        historyAndStatsDao.delete(entry)
+    }
+
+    suspend fun deleteHistory(id: Long) {
+        historyAndStatsDao.deleteById(id)
+    }
+
+    suspend fun clearHistory() {
+        historyAndStatsDao.deleteAll()
+    }
+
+    fun getSongDetailWithLikeStatus(songId: Long): Flow<SongDetailsWithLikeStatus?> {
+        return songDao.getSongWithLikeStatusById(songId)
+    }
+
+    fun getPlaylistIdsForSong(songId: Long): Flow<List<Long>> {
+        return playlistDao.getPlaylistIdsForSong(songId)
+    }
+
+    suspend fun removeSongFromPlaylist(playlistId: Long, songId: Long) {
+        playlistDao.removeSongFromPlaylist(
+            PlaylistSongCrossRef(
+                playlistId = playlistId,
+                songId = songId
+            )
+        )
+    }
 
 
 }

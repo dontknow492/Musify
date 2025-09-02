@@ -21,6 +21,7 @@ fun SongsScreen(
     songs: LazyPagingItems<SongWithAlbumAndArtist>,
     item: @Composable () -> Unit = {},
     onSongClick: (Long) -> Unit = {},
+    onMenuClick: (Long) -> Unit = {},
 //    playerViewModel: PlayerViewModel = hiltViewModel()
 ) {
     LazyColumn(
@@ -45,10 +46,11 @@ fun SongsScreen(
 //                            )
 //                        )
                         onSongClick(it)
-                        Log.d("HomeScreen", "onCardClick: $it")
+                        Log.d("SongsScreen", "onCardClick: $it")
                     },
                     onMenuCLick = {
-                        Log.d("HomeScreen", "onMenuCLick: $it")
+                        onMenuClick(it)
+                        Log.d("SongsScreen", "onMenuCLick: $it")
                     }
                 )
             }

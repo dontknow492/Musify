@@ -3,6 +3,7 @@ package org.ghost.musify.ui.screens.tabWindow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.rememberAsyncImagePainter
-import org.ghost.musify.ui.screens.components.PlaylistItem
+import org.ghost.musify.ui.screens.components.CoverChangeableItem
 import org.ghost.musify.ui.screens.dialog.CreatePlaylist
 import org.ghost.musify.viewModels.home.PlaylistViewModel
 
@@ -55,7 +56,7 @@ fun PlaylistScreen(
 ) {
     var isCreatingPlaylist by remember { mutableStateOf(false) }
 
-    val playlists = viewModel.playlists.collectAsLazyPagingItems()
+    val playlistsWithCover = viewModel.playlists.collectAsLazyPagingItems()
     Box {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(150.dp),
@@ -64,16 +65,20 @@ fun PlaylistScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(
-                playlists.itemCount,
-                key = { index -> playlists[index]?.id ?: index }
+                playlistsWithCover.itemCount,
+                key = { index -> playlistsWithCover[index]?.playlist?.id ?: index }
             ) { index ->
-                val playlist = playlists[index]
-                if (playlist != null) {
-                    PlaylistItem(
-                        modifier = Modifier.height(200.dp),
-                        playlist = playlist,
-                        onPlaylistClick = onPlaylistClick,
-                        coverImage = playlist.playlistImageUriId ?: playlist.playlistImageUrl
+                val playlistWithCover = playlistsWithCover[index]
+                if (playlistWithCover != null) {
+                    val playlist = playlistWithCover.playlist
+                    CoverChangeableItem(
+                        modifier = modifier
+                            .clickable(
+                                onClick = { onPlaylistClick(playlist.id) }
+                            )
+                            .height(200.dp),
+                        coverImage = playlistWithCover.cover,
+                        title = playlist.name,
                     )
                 }
 

@@ -2,8 +2,6 @@ package org.ghost.musify.ui.screens.songs
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,6 +27,7 @@ fun ArtistSongs(
     modifier: Modifier = Modifier,
     viewModel: ArtistSongsViewModel = hiltViewModel(),
     onSongClick: (Long, SongFilter) -> Unit,
+    onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val imageData = uiState.artist?.imageUriId ?: uiState.artist?.imageUrl ?: Any()
@@ -53,20 +52,19 @@ fun ArtistSongs(
             type = "musics",
             headingTitle = "Songs"
         )
-        Scaffold { innerPadding ->
-            val modifier = Modifier.padding(innerPadding)
-            SongList(
-                modifier = modifier,
-                data = artistData,
-                onPlayClick = {},
-                onCardClick = {
-                    if(uiState.artist == null) return@SongList
-                    onSongClick(it, SongFilter(category = SongsCategory.Artist(uiState.artist!!.name)))
-                },
-                onFilterClick = {},
-                onShuffleClick = {},
-            )
-        }
+        SongList(
+            modifier = Modifier,
+            data = artistData,
+            onPlayClick = {},
+            onCardClick = {
+                if (uiState.artist == null) return@SongList
+                onSongClick(it, SongFilter(category = SongsCategory.Artist(uiState.artist!!.name)))
+            },
+            onFilterClick = {},
+            onShuffleClick = {},
+            onBackClick = onBackClick
+        )
+
     }
 }
 
