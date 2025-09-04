@@ -5,19 +5,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
-import org.ghost.musify.ui.screens.components.CoverChangeableItem
+import org.ghost.musify.ui.components.CoverChangeableItem
 import org.ghost.musify.viewModels.home.ArtistViewModel
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArtistScreen(
     modifier: Modifier = Modifier,
     viewModel: ArtistViewModel,
-    onArtistClick: (String) -> Unit = {}
+    onArtistClick: (String) -> Unit = {},
 ) {
     val artistsWithCover = viewModel.artists.collectAsLazyPagingItems()
     LazyVerticalGrid(

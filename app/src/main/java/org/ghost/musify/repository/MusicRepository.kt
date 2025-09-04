@@ -30,8 +30,8 @@ import org.ghost.musify.entity.relation.SongDetailsWithLikeStatus
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.enums.SortBy
 import org.ghost.musify.enums.SortOrder
-import org.ghost.musify.ui.screens.models.SongFilter
-import org.ghost.musify.ui.screens.models.SongsCategory
+import org.ghost.musify.ui.models.SongFilter
+import org.ghost.musify.ui.models.SongsCategory
 import javax.inject.Inject
 
 class MusicRepository @Inject constructor(

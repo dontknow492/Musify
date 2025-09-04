@@ -1,108 +1,115 @@
 package org.ghost.musify.utils
 
-import androidx.compose.material3.ColorScheme
+import android.content.Context
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.palette.graphics.Palette
 import coil3.imageLoader
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.size.Size
 import coil3.toBitmap
+import com.materialkolor.quantize.QuantizerCelebi
+import com.materialkolor.rememberDynamicColorScheme
+import com.materialkolor.score.Score
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 
+
+/**
+ * The final, robust composable for applying a dynamic theme from an image.
+ * It uses the MaterialKolor library for simple and accurate theme generation.
+ */
 @Composable
 fun DynamicThemeFromImage(
     imageUrl: Any,
     content: @Composable () -> Unit
 ) {
-    val defaultColorScheme = MaterialTheme.colorScheme
-    // 1. State to hold the generated ColorScheme
-    var colorScheme by remember { mutableStateOf(defaultColorScheme) }
+
+    val isDarkTheme = isSystemInDarkTheme()
+    val defaultColorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
+
+    // 1. State to hold our extracted seed color and loading status.
+    var seedColor by remember { mutableStateOf(Color.Transparent) }
+    var isLoading by remember { mutableStateOf(true) }
     val context = LocalContext.current
 
-    // 2. Launch an effect that regenerates the theme when the imageUrl changes
+    // 2. A LaunchedEffect to load the image and extract the seed color.
+    //    This runs in the background and only re-runs if the imageUrl changes.
     LaunchedEffect(imageUrl) {
-        // Create a new ColorScheme in a background thread
-        val newColorScheme = withContext(Dispatchers.IO) {
-            generateColorSchemeFromImage(
-                context,
-                defaultColorScheme,
-                imageUrl,
-            )
+        isLoading = true
+        withContext(Dispatchers.IO) {
+            extractSourceColorFromImage(context, imageUrl)?.let { color ->
+                seedColor = Color(color)
+            }
         }
-        // Update the state with the new scheme
-        colorScheme = newColorScheme
+        isLoading = false
     }
 
-    // 3. Apply the dynamic ColorScheme to the content
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
+
+
+    // 3. Generate the full ColorScheme using the seed color.
+    //    `rememberDynamicColorScheme` is the magic function from the MaterialKolor library.
+    val colorScheme = rememberDynamicColorScheme(
+        seedColor = seedColor,
+        isDark = isDarkTheme,
     )
+
+    // 4. Apply the theme with a smooth Crossfade transition from loading to content.
+    Crossfade(
+        targetState = isLoading,
+        animationSpec = tween(500),
+        label = "ThemeCrossfade"
+    ) { loading ->
+        MaterialTheme(colorScheme = if (loading) defaultColorScheme else colorScheme) {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                content()
+            }
+        }
+    }
 }
 
-private suspend fun generateColorSchemeFromImage(
-    context: android.content.Context,
-    defaultColorScheme: ColorScheme,
-    imageUrl: Any
-): ColorScheme {
-    try {
-        // 1. Create an ImageRequest with Coil
+/**
+ * A helper function to load an image with Coil and extract the
+ * most suitable color using the official Material Color Utilities logic.
+ *
+ * @return The ARGB integer of the extracted color, or null if it fails.
+ */
+private suspend fun extractSourceColorFromImage(context: Context, imageUrl: Any): Int? {
+    return try {
         val request = ImageRequest.Builder(context)
             .data(imageUrl)
-            .size(Size(128, 128)) // Scale down the image to improve performance
-            .allowHardware(false) // Important for converting to a bitmap
+            .size(Size(128, 128))
+            .allowHardware(false)
+            .memoryCachePolicy(CachePolicy.ENABLED)
             .build()
 
-        // 2. Get the Drawable result
-        val result = context.imageLoader.execute(request).image
+        val bitmap = context.imageLoader.execute(request).image?.toBitmap() ?: return null
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
 
-        if (result != null) {
-            // 3. Convert the Drawable to a Bitmap
-            val bitmap = result.toBitmap()
-
-            // 4. Generate the Palette from the bitmap
-            val palette = Palette.from(bitmap).generate()
-
-            // 5. Extract colors, providing fallbacks
-            val vibrant =
-                palette.vibrantSwatch?.rgb?.let { Color(it) } ?: defaultColorScheme.primary
-            val vibrantContainer = palette.lightVibrantSwatch?.rgb?.let { Color(it) }
-                ?: defaultColorScheme.primaryContainer
-            val muted = palette.mutedSwatch?.rgb?.let { Color(it) } ?: defaultColorScheme.secondary
-            val mutedContainer = palette.lightMutedSwatch?.rgb?.let { Color(it) }
-                ?: defaultColorScheme.secondaryContainer
-            val dominant =
-                palette.dominantSwatch?.rgb?.let { Color(it) } ?: defaultColorScheme.surface
-
-            // 6. Create and return a new ColorScheme
-            return darkColorScheme(
-                primary = vibrant,
-                primaryContainer = vibrantContainer,
-                secondary = muted,
-                secondaryContainer = mutedContainer,
-                surface = dominant,
-                onSurface = palette.dominantSwatch?.titleTextColor?.let { Color(it) }
-                    ?: defaultColorScheme.onSurface
-                // You can map other colors as well
-            )
-        }
+        Score.score(QuantizerCelebi.quantize(pixels, 128)).firstOrNull()
     } catch (e: Exception) {
-        // Handle exceptions (e.g., network error, invalid image)
         e.printStackTrace()
+        null
     }
-
-    // Return the default scheme if anything goes wrong
-    return defaultColorScheme
 }

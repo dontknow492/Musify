@@ -1,0 +1,61 @@
+package org.ghost.musify.ui.components
+
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.paging.compose.LazyPagingItems
+import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
+import org.ghost.musify.utils.getSongUri
+
+@RequiresApi(Build.VERSION_CODES.Q)
+@Composable
+fun SongsLazyColumn(
+    modifier: Modifier = Modifier,
+    songs: LazyPagingItems<SongWithAlbumAndArtist>,
+    item: @Composable () -> Unit = {},
+    onSongClick: (Long) -> Unit = {},
+    onMenuClick: (Long) -> Unit = {},
+//    playerViewModel: PlayerViewModel = hiltViewModel()
+) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            item()
+        }
+        items(songs.itemCount) { index ->
+            val song = songs[index]
+            song?.let { song ->
+                SongItem(
+                    songWithAlbumAndArtist = song,
+                    coverArtUri = getSongUri(song.song.id),
+                    onCardClick = {
+//                        playerViewModel.onSongSelected(
+//                            it,
+//                            SongFilter(
+//                                SongsCategory.AllSongs,
+//                            )
+//                        )
+                        onSongClick(it)
+                        Log.d("SongsLazyColumn", "onCardClick: $it")
+                    },
+                    onMenuCLick = {
+                        onMenuClick(it)
+                        Log.d("SongsLazyColumn", "onMenuCLick: $it")
+                    }
+                )
+            }
+
+        }
+    }
+}
+
+

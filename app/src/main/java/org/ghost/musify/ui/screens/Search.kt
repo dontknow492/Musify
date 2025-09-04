@@ -50,8 +50,8 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
-import org.ghost.musify.ui.screens.components.CoverChangeableItem
-import org.ghost.musify.ui.screens.components.SongItem
+import org.ghost.musify.ui.components.CoverChangeableItem
+import org.ghost.musify.ui.components.SongItem
 import org.ghost.musify.viewModels.SearchUiState
 import org.ghost.musify.viewModels.SearchViewModel
 

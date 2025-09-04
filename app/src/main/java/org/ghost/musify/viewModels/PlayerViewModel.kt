@@ -4,9 +4,9 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
@@ -34,7 +34,7 @@ import org.ghost.musify.entity.HistoryEntity
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.repository.MediaControllerRepository
 import org.ghost.musify.repository.MusicRepository
-import org.ghost.musify.ui.screens.models.SongFilter
+import org.ghost.musify.ui.models.SongFilter
 import org.ghost.musify.utils.mapSongToMediaItem
 import org.ghost.musify.utils.mapSongsToMediaItems
 import javax.inject.Inject
@@ -69,7 +69,8 @@ data class PlayerUiState(
     val isFavorite: Boolean = false,
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
-    val volume: Float = 1f
+    val volume: Float = 1f,
+    val playbackSpeed: Float = 1f
 )
 
 @HiltViewModel
@@ -79,12 +80,15 @@ class PlayerViewModel @Inject constructor(
     @param: ApplicationContext private val context: Context
 ) : ViewModel() {
     // region State Properties
+
+    var playbackSpeeds = listOf(0.25f, 0.5f, 1f, 1.5f, 2f)
     private var mediaController: MediaController? = null
     private var progressUpdateJob: Job? = null
     private val isControllerReady = MutableStateFlow(false) // State to signal readiness
 
     private var currentMediaIdForHistory: Long? = null
     private var playbackStartTimeMs: Long = 0L
+    private var playedSongTimeMs: Long = 0L
 
     // A threshold to avoid adding songs to history if they were skipped immediately
     private val MIN_PLAYBACK_DURATION_FOR_HISTORY_MS = 10000 // 10 seconds
@@ -118,7 +122,10 @@ class PlayerViewModel @Inject constructor(
                 currentMediaIdForHistory = newMediaIdAsLong
                 playbackStartTimeMs = System.currentTimeMillis()
             }
+
+
             updateStateFromController()
+
         }
 
 
@@ -148,9 +155,20 @@ class PlayerViewModel @Inject constructor(
             updateStateFromController()
         }
 
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            updateStateFromController()
+        }
+
+        override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
+            updateStateFromController()
+        }
+
+
         override fun onPlayerError(error: PlaybackException) {
             Log.e("PlayerViewModel", "Player Error: ${error.message}", error)
         }
+
+
     }
 
     init {
@@ -178,9 +196,9 @@ class PlayerViewModel @Inject constructor(
     val currentSong = _currentSong.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val isFavorite: StateFlow<Boolean> = currentSong.flatMapLatest { song ->
+    val isFavorite: StateFlow<Boolean> = _currentSong.flatMapLatest { song ->
         // 1. Use flatMapLatest to switch to a new flow when the song changes.
-
+        Log.d("PlayerViewModel", "isFavorite: ${song?.song?.title}")
         if (song == null) {
             // 2. If there's no song, the favorite status is false.
             flowOf(false)
@@ -207,11 +225,14 @@ class PlayerViewModel @Inject constructor(
         val controller = mediaController ?: return
         val songId = controller.currentMediaItem?.mediaId?.toLongOrNull()
 
+        val currentSong = songId?.let{ songIdToSongMap[it]}
+        _currentSong.value = currentSong
+
         _uiState.update { currentState ->
             currentState.copy(
                 isPlaying = controller.isPlaying,
                 status = mapPlaybackStateToStatus(controller.playbackState),
-                currentSong = songId?.let { songIdToSongMap[it] },
+                currentSong = currentSong,
                 isShuffleEnabled = controller.shuffleModeEnabled,
                 repeatMode = controller.repeatMode,
                 totalDuration = controller.duration.coerceAtLeast(0L),
@@ -219,6 +240,7 @@ class PlayerViewModel @Inject constructor(
                 hasPrevious = controller.hasPreviousMediaItem(),
                 volume = controller.volume,
                 isFavorite = isFavorite.value,
+                playbackSpeed = controller.playbackParameters.speed,
                 coverImage = ImageRequest.Builder(context)
                     .data(
                         null
@@ -236,6 +258,7 @@ class PlayerViewModel @Inject constructor(
         progressUpdateJob = viewModelScope.launch {
             while (true) {
                 val currentPosition = mediaController?.currentPosition ?: 0L
+                playedSongTimeMs += 1000L
                 _uiState.update { it.copy(currentPosition = currentPosition) }
                 delay(1000L)
                 Log.d("PlayerViewModel", "Progress updated: $currentPosition")
@@ -436,6 +459,42 @@ class PlayerViewModel @Inject constructor(
     }
 
 
+    fun seekToSong(songId: Long){
+        viewModelScope.launch {
+            val controller = waitForController() ?: run {
+                Log.e("PlayerViewModel", "Seek command failed: Controller not available.")
+                return@launch
+            }
+            var itemIndexToPlay = -1
+            // Loop through the queue to find the index of the matching media item.
+            for (i in 0 until controller.mediaItemCount) {
+                val mediaItem = controller.getMediaItemAt(i)
+                if (mediaItem.mediaId == songId.toString()) {
+                    itemIndexToPlay = i
+                    break
+                }
+            }
+
+            // If we found the item, remove it by its index.
+            if (itemIndexToPlay != -1) {
+                // Remove the item from the player's queue.
+                controller.seekTo(itemIndexToPlay, 0L)
+
+                Log.d(
+                    "PlayerViewModel",
+                    "Playing song with ID $songId at index $itemIndexToPlay from queue."
+                )
+            } else {
+                Log.w(
+                    "PlayerViewModel",
+                    "Could not play song: ID $songId not found in the queue."
+                )
+            }
+
+        }
+    }
+
+
     fun onPlayPauseClicked() {
         mediaController?.let { if (it.isPlaying) it.pause() else it.play() }
     }
@@ -478,7 +537,8 @@ class PlayerViewModel @Inject constructor(
                 true -> musicRepository.removeFromFavorites(song.song.id)
                 false -> musicRepository.addToFavorites(song.song.id)
             }
-            updateStateFromController()
+            Log.d("PlayerViewModel", "toggleFavorite: ${isFavorite.value}")
+//            isFavorite.value = !isCurrentlyFavorite
         }
     }
 
@@ -494,6 +554,10 @@ class PlayerViewModel @Inject constructor(
         val validVolume = volume.coerceIn(0f, 1f)
         mediaController?.volume = validVolume
 
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        mediaController?.setPlaybackSpeed(speed)
     }
 
 
@@ -533,14 +597,13 @@ class PlayerViewModel @Inject constructor(
     private fun logCurrentSongToHistory() {
         // Check if we were tracking a song
         currentMediaIdForHistory?.let { mediaId ->
-            val playedDurationMs = System.currentTimeMillis() - playbackStartTimeMs
 
             // Only add to history if it was played for a meaningful duration
-            if (playedDurationMs > MIN_PLAYBACK_DURATION_FOR_HISTORY_MS) {
+            if (playedSongTimeMs > MIN_PLAYBACK_DURATION_FOR_HISTORY_MS) {
                 val historyEntity = HistoryEntity(
                     songId = mediaId,
                     playedAt = playbackStartTimeMs,
-                    durationPlayed = playedDurationMs,
+                    durationPlayed = playedSongTimeMs,
                     wasFavorite = isFavorite.value
 
                 )
@@ -548,7 +611,7 @@ class PlayerViewModel @Inject constructor(
                     musicRepository.addToHistory(historyEntity)
                     Log.d(
                         "PlayerViewModel",
-                        "History: Added '$mediaId' to history. Played for ${playedDurationMs / 1000} seconds."
+                        "History: Added '$mediaId' to history. Played for ${playedSongTimeMs / 1000} seconds."
                     )
                 }
 

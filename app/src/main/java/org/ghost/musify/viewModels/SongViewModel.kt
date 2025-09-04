@@ -6,8 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -29,37 +32,33 @@ class SongViewModel @Inject constructor(
     val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<SongUiState> =
-        // Get the songId from navigation arguments
-        savedStateHandle.getStateFlow<Long?>("songId", null)
-            .transformLatest { songId ->
-                if (songId == null) {
-                    emit(SongUiState.Error("Song ID not provided."))
-                    return@transformLatest
-                }
+    private val _uiState = MutableStateFlow<SongUiState>(SongUiState.Loading)
+    val uiState: StateFlow<SongUiState> = _uiState.asStateFlow()
 
-                // 5. Map the repository Flow to the UI State
-                repository.getSongDetailWithLikeStatus(songId)
-                    .map { songDetails ->
-                        if (songDetails != null) {
-                            SongUiState.Success(songDetails)
-                        } else {
-                            SongUiState.Error("Song not found.")
-                        }
-                    }
-                    .catch { throwable ->
-                        // 6. Catch any errors from the repository
-                        emit(SongUiState.Error("Error: ${throwable.message}"))
-                    }
-                    .collect { emit(it) } // Emit the mapped state
+    private var songDetailJob: Job? = null
+
+    init {
+        // 2. Check SavedStateHandle when the ViewModel is created.
+        //    If a "songId" exists (from navigation args), load it automatically.
+        savedStateHandle.get<Long>("songId")?.let { songId ->
+            if (songId != 0L) { // Ensure it's a valid ID
+                loadSongDetail(songId)
             }
-            .stateIn(
-                // 7. Convert the cold Flow to a hot StateFlow
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000L),
-                initialValue = SongUiState.Loading // 8. Set an initial loading state
-            )
+        }
+    }
+
+    fun loadSongDetail(songId: Long) {
+        songDetailJob?.cancel()
+        songDetailJob = viewModelScope.launch {
+            repository.getSongDetailWithLikeStatus(songId)
+                .map<SongDetailsWithLikeStatus?, SongUiState> { details ->
+                    if (details != null) SongUiState.Success(details)
+                    else SongUiState.Error("Song not found.")
+                }
+                .catch { e -> emit(SongUiState.Error(e.message ?: "An error occurred")) }
+                .collect { state -> _uiState.value = state }
+        }
+    }
 
     fun toggleFavorite() {
         val songId = savedStateHandle.get<Long>("songId")

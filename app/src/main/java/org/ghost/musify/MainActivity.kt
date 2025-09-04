@@ -24,8 +24,8 @@ import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint
-import org.ghost.musify.navigation.AppNavigation
-import org.ghost.musify.navigation.NavScreen
+import org.ghost.musify.ui.navigation.AppNavigation
+import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.ui.theme.MusifyTheme
 
 @AndroidEntryPoint
@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = false
             ) {
 //                val start = NavScreen.AlbumSongs(1312244804222984308L)
-                val start = NavScreen.Home
+                val start = NavScreen.Setting
                 RequestAudioPermission {
                     AppNavigation(
                         navController = navController,

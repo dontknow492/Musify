@@ -43,17 +43,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.launch
 import org.ghost.musify.R
-import org.ghost.musify.ui.screens.common.SongsScreen
-import org.ghost.musify.ui.screens.models.SongFilter
-import org.ghost.musify.ui.screens.models.SongsCategory
-import org.ghost.musify.ui.screens.models.Tab
+import org.ghost.musify.ui.components.SongsLazyColumn
+import org.ghost.musify.ui.models.SongFilter
+import org.ghost.musify.ui.models.SongsCategory
+import org.ghost.musify.ui.models.Tab
 import org.ghost.musify.ui.screens.tabWindow.AlbumScreen
 import org.ghost.musify.ui.screens.tabWindow.ArtistScreen
 import org.ghost.musify.ui.screens.tabWindow.PlaylistScreen
 import org.ghost.musify.viewModels.home.MusicViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -90,9 +90,10 @@ fun HomeScreen(
     )
     val scope = rememberCoroutineScope()
     var search by rememberSaveable { mutableStateOf("") }
+
     var isBottomSheetVisible by remember { mutableStateOf(false) }
     val onSearchChange: (String) -> Unit = { search = it }
-    { isBottomSheetVisible = true }
+
 
     val allSongs = viewModel.music.collectAsLazyPagingItems()
     val favoriteSongs = viewModel.favoriteSongs.collectAsLazyPagingItems()
@@ -103,7 +104,7 @@ fun HomeScreen(
         modifier = modifier,
         topBar = {
             HomeTopAppBar(
-                onFilterClick = {},
+                onFilterClick = { isBottomSheetVisible = true },
                 onSearchClick = onSearchClick
             )
         }
@@ -133,13 +134,12 @@ fun HomeScreen(
 
                     }
                 )
-
                 HorizontalPager(
                     pageState,
                     beyondViewportPageCount = 5
                 ) { page ->
                     when (page) {
-                        0 -> SongsScreen(
+                        0 -> SongsLazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             allSongs,
                             item = {},
@@ -152,37 +152,43 @@ fun HomeScreen(
                         1 -> ArtistScreen(
                             modifier = Modifier.fillMaxSize(),
                             viewModel = hiltViewModel(),
-                            onArtistClick = onArtistClick
+                            onArtistClick = onArtistClick,
                         )
 
                         2 -> AlbumScreen(
                             modifier = Modifier.fillMaxSize(),
                             viewModel = hiltViewModel(),
-                            onAlbumClick = onAlbumClick
+                            onAlbumClick = onAlbumClick,
                         )
 
                         3 -> PlaylistScreen(
                             modifier = Modifier.fillMaxSize(),
                             viewModel = hiltViewModel(),
-                            onPlaylistClick = onPlaylistClick
-
+                            onPlaylistClick = onPlaylistClick,
                         )
 
-                        4 -> SongsScreen(modifier = Modifier.fillMaxSize(), favoriteSongs)
+                        4 -> SongsLazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            favoriteSongs,
+                            item = {},
+                            onSongClick = { songId ->
+                                onCardClick(songId, SongFilter(SongsCategory.AllSongs))
+                            },
+                            onMenuClick = onMenuClick,
+                        )
                     }
                 }
-
-            }
-        }
-        AnimatedVisibility(isBottomSheetVisible) {
-            ModalBottomSheet(
-                onDismissRequest = { isBottomSheetVisible = false },
-                modifier = Modifier.padding(horizontal = 8.dp)
-            ) {
-
             }
         }
     }
+    AnimatedVisibility(isBottomSheetVisible) {
+        ModalBottomSheet(
+            onDismissRequest = { isBottomSheetVisible = false },
+        ) {
+
+        }
+    }
+
 
 }
 

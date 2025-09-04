@@ -18,10 +18,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+
+
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,15 +47,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.rememberAsyncImagePainter
-import org.ghost.musify.ui.screens.components.CoverChangeableItem
-import org.ghost.musify.ui.screens.dialog.CreatePlaylist
+import org.ghost.musify.ui.components.CoverChangeableItem
+import org.ghost.musify.ui.dialog.CreatePlaylist
 import org.ghost.musify.viewModels.home.PlaylistViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistScreen(
     modifier: Modifier = Modifier,
     viewModel: PlaylistViewModel,
-    onPlaylistClick: (Long) -> Unit = {}
+    onPlaylistClick: (Long) -> Unit = {},
 ) {
     var isCreatingPlaylist by remember { mutableStateOf(false) }
 
@@ -107,6 +111,7 @@ fun PlaylistScreen(
             viewModel.createPlaylist(title, description, imageUriId, imageUrl)
         }
     }
+
 //    AddPlaylistDialog()
 }
 

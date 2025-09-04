@@ -3,7 +3,6 @@ package org.ghost.musify.ui.screens
 import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -32,7 +31,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -40,8 +38,11 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.error
 import org.ghost.musify.R
+import org.ghost.musify.ui.components.common.PlayPauseButton
+import org.ghost.musify.ui.components.common.ProgressBar
 import org.ghost.musify.utils.cacheEmbeddedArts
 import org.ghost.musify.utils.getSongUri
+import org.ghost.musify.viewModels.PlayerStatus
 import org.ghost.musify.viewModels.PlayerUiState
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -106,33 +107,18 @@ fun BottomPlayer(
                 )
                 Text(
                     text = "$artist - $album",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                onClick = onPlayPauseClick
-            ) {
-                when (playerUiState.isPlaying) {
-                    true -> {
-                        Icon(
-                            painter = painterResource(R.drawable.rounded_pause_24),
-                            contentDescription = "pause",
-                            modifier = Modifier.size(30.dp)
-                        )
-
-                    }
-
-                    false -> {
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_play_arrow_24),
-                            contentDescription = "play",
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-
-                }
-            }
+            PlayPauseButton(
+                onClick = onPlayPauseClick,
+                enable = playerUiState.status != PlayerStatus.BUFFERING,
+                isPlaying = playerUiState.isPlaying,
+                iconSize = 30.dp
+            )
             IconButton(
                 onClick = onCloseCLick
             ) {
@@ -160,24 +146,3 @@ fun BottomPlayer(
     }
 }
 
-@Composable
-fun ProgressBar(
-    modifier: Modifier = Modifier,
-    currentPosition: Long,
-    totalDuration: Long,
-    brush: Brush,
-) {
-//    LinearProgressIndicator(
-//        modifier = modifier,
-//        progress = { currentPosition.toFloat() / totalDuration },
-//    )
-    Canvas(
-        modifier = modifier.width(40.dp)
-    ) {
-        drawRect(
-            brush,
-            size = size.copy(width = size.width * currentPosition / totalDuration),
-        )
-
-    }
-}
