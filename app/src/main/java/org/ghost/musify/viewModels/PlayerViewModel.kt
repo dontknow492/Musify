@@ -614,13 +614,16 @@ class PlayerViewModel @Inject constructor(
                         "History: Added '$mediaId' to history. Played for ${playedSongTimeMs / 1000} seconds."
                     )
                 }
-
-
             }
+            resetPlayedSongTimeMs()
         }
 
         // Reset the tracker
         currentMediaIdForHistory = null
+    }
+
+    private fun resetPlayedSongTimeMs(){
+        playedSongTimeMs = 0L
     }
 
 

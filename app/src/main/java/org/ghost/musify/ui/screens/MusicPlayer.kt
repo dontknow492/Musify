@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,9 @@ import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.List
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,6 +47,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,6 +58,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -206,13 +212,19 @@ fun PlayerBottomSheet(
     onSongClick: (Long) -> Unit = {},
     onSongMenuClick: (Long) -> Unit = {},
 ) {
-    Text("Helloadfasdfsadfsadfsadf")
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         // 1. Add state to hold and remember the search query
         var searchQuery by rememberSaveable { mutableStateOf("") }
+
+        var songIndex by remember { mutableIntStateOf(0) }
+        var totalDuration by remember { mutableLongStateOf(0L) }
+
+        LaunchedEffect(songs) {
+            totalDuration = songs.sumOf { it.song.duration }.toLong()
+        }
 
         // 2. Filter the list based on the search query.
         // This remembers the result unless the query or the original songs list changes.
@@ -233,6 +245,14 @@ fun PlayerBottomSheet(
 
         Column(modifier = modifier) {
             // 3. Add the TextField for the search bar UI
+
+            PlayerBottomSheetAction(
+                modifier = Modifier,
+                size = songs.size,
+                current = songIndex + 1,
+                duration = totalDuration
+            )
+
             TextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -264,6 +284,7 @@ fun PlayerBottomSheet(
             ) {
                 itemsIndexed(filteredSongs, key = { _, item -> item.song.id }) { index, song ->
                     val state = rememberSwipeToDismissBoxState(
+                        initialValue = SwipeToDismissBoxValue.Settled,
                         confirmValueChange = {
                             when (it) {
                                 SwipeToDismissBoxValue.StartToEnd -> {
@@ -281,14 +302,15 @@ fun PlayerBottomSheet(
                         },
                     )
 
-                    val modifier = if (song.song.id == currentSongId)
-
+                    val modifier = if (song.song.id == currentSongId){
+                        songIndex = index
                         Modifier
                             .border(
                                 border = BorderStroke(4.dp, MaterialTheme.colorScheme.primary),
                                 shape = MaterialTheme.shapes.medium
                             )
                             .padding(2.dp)
+                    }
                     else
                         Modifier
 
@@ -346,6 +368,71 @@ fun PlayerBottomSheet(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PlayerBottomSheetAction(
+    modifier: Modifier = Modifier,
+    size: Int,
+    current: Int,
+    duration: Long,
+){
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 12.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = {}
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Lock,
+                contentDescription = "lock"
+            )
+        }
+        IconButton(
+            onClick = {}
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.baseline_play_arrow_24),
+                contentDescription = "play"
+            )
+        }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("$current/$size", style = MaterialTheme.typography.bodySmall)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Icon(
+                    painter = painterResource(R.drawable.rounded_timer_24),
+                    contentDescription = "time",
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(duration.toFormattedDuration(), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        IconButton(
+            onClick = {}
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.rounded_save_24),
+                contentDescription = "Save"
+            )
+        }
+        IconButton(
+            onClick = {}
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.MoreVert,
+                contentDescription = "More"
+            )
         }
     }
 }
