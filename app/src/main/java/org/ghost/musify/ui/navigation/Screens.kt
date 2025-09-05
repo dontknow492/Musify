@@ -10,6 +10,7 @@ sealed interface NavScreen {
     sealed interface Launch : NavScreen {
         @Serializable
         data object Splash : Launch
+
         @Serializable
         data object Onboarding : Launch
     }
@@ -19,8 +20,10 @@ sealed interface NavScreen {
     sealed interface Main : NavScreen {
         @Serializable
         data object Home : Main
+
         @Serializable
         data object Search : Main
+
         @Serializable
         data object History : Main
     }
@@ -30,8 +33,10 @@ sealed interface NavScreen {
     sealed interface Songs : NavScreen {
         @Serializable
         data class Album(val albumId: Long) : Songs
+
         @Serializable
         data class Artist(val artistName: String) : Songs
+
         @Serializable
         data class Playlist(val playlistId: Long) : Songs
     }
@@ -45,6 +50,7 @@ sealed interface NavScreen {
     sealed interface Dialogs : NavScreen {
         @Serializable
         data class SongMenu(val songId: Long) : Dialogs
+
         @Serializable
         data class AddToPlaylist(val songId: Long) : Dialogs
     }
@@ -54,14 +60,19 @@ sealed interface NavScreen {
     sealed interface Settings : NavScreen {
         @Serializable
         data object Main : Settings // The main settings screen
+
         @Serializable
         data object General : Settings
+
         @Serializable
         data object Audio : Settings
+
         @Serializable
         data object Library : Settings
+
         @Serializable
         data object Notifications : Settings
+
         @Serializable
         data object Advanced : Settings
     }

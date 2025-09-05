@@ -1,7 +1,6 @@
 package org.ghost.musify.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -10,7 +9,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -27,7 +25,6 @@ import org.ghost.musify.R
 import org.ghost.musify.ui.models.BottomNavigationData
 import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.ui.screens.BottomPlayer
-import org.ghost.musify.viewModels.MainViewModel
 import org.ghost.musify.viewModels.PlayerViewModel
 
 @Composable
@@ -75,32 +72,32 @@ fun MyBottomAppBar(
 ) {
     val uiState by playerViewModel.uiState.collectAsState()
 //    BottomAppBar {
-        Column{
-            AnimatedVisibility(uiState.currentSong != null) {
-                Column {
-                    BottomPlayer(
-                        modifier = modifier.clip(
-                            RoundedCornerShape(
-                                topStart = 8.dp,
-                                topEnd = 8.dp
-                            )
-                        ),
-                        playerUiState = uiState,
-                        onClick = onPlayerClick,
-                        onPlayPauseClick = {
-                            playerViewModel.onPlayPauseClicked()
-                        },
-                        onCloseCLick = {
+    Column {
+        AnimatedVisibility(uiState.currentSong != null) {
+            Column {
+                BottomPlayer(
+                    modifier = modifier.clip(
+                        RoundedCornerShape(
+                            topStart = 8.dp,
+                            topEnd = 8.dp
+                        )
+                    ),
+                    playerUiState = uiState,
+                    onClick = onPlayerClick,
+                    onPlayPauseClick = {
+                        playerViewModel.onPlayPauseClicked()
+                    },
+                    onCloseCLick = {
 
-                        }
-                    )
-                    HorizontalDivider()
-                }
+                    }
+                )
+                HorizontalDivider()
             }
-            AppNavigationBar(
-                currentRoute = currentScreen,
-                onClick = onNavigationItemClick
-            )
+        }
+        AppNavigationBar(
+            currentRoute = currentScreen,
+            onClick = onNavigationItemClick
+        )
 //        }
     }
 }
@@ -110,7 +107,7 @@ fun PlayerBottomAppBar(
     modifier: Modifier = Modifier,
     playerViewModel: PlayerViewModel,
     onClick: () -> Unit,
-){
+) {
     val uiState by playerViewModel.uiState.collectAsState()
     AnimatedVisibility(uiState.currentSong != null, modifier = modifier) {
         BottomAppBar {

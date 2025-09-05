@@ -3,51 +3,26 @@ package org.ghost.musify.ui.navigation
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
-import kotlinx.coroutines.launch
-import org.ghost.musify.data.OnboardingManager
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
-import org.ghost.musify.ui.components.AppNavigationBar
 import org.ghost.musify.ui.dialog.AddToPlaylistDialog
 import org.ghost.musify.ui.dialog.menu.SongMenu
 import org.ghost.musify.ui.models.SongFilter
-import org.ghost.musify.ui.screens.BottomPlayer
 import org.ghost.musify.ui.screens.HistoryScreen
 import org.ghost.musify.ui.screens.HomeScreen
 import org.ghost.musify.ui.screens.PlayerWindow
@@ -62,13 +37,11 @@ import org.ghost.musify.ui.screens.setting.child.NotificationSettingScreen
 import org.ghost.musify.ui.screens.songs.AlbumSongs
 import org.ghost.musify.ui.screens.songs.ArtistSongs
 import org.ghost.musify.ui.screens.songs.PlaylistSongs
-import org.ghost.musify.viewModels.AddToPlaylistViewModel
 import org.ghost.musify.viewModels.HistoryViewModel
 import org.ghost.musify.viewModels.MainUiState
 import org.ghost.musify.viewModels.MainViewModel
 import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.SearchViewModel
-import org.ghost.musify.viewModels.SongViewModel
 import org.ghost.musify.viewModels.home.MusicViewModel
 
 const val TAG = "NavigationHandler"
@@ -98,13 +71,16 @@ fun AppNavigation(
                     }
                     hasNavigatedFromSplash = true // Mark that navigation has occurred.
                 }
+
                 MainUiState.NavigateToMainApp -> {
                     navController.navigate(startDestination) {
                         popUpTo(NavScreen.Launch.Splash) { inclusive = true }
                     }
                     hasNavigatedFromSplash = true // Mark that navigation has occurred.
                 }
-                MainUiState.Loading -> { /* Do nothing, waiting for view model. */ }
+
+                MainUiState.Loading -> { /* Do nothing, waiting for view model. */
+                }
             }
         }
     }
@@ -112,7 +88,6 @@ fun AppNavigation(
     var searchViewModel: SearchViewModel = hiltViewModel()
     val musicViewModel: MusicViewModel = hiltViewModel()
     val historyViewModel: HistoryViewModel = hiltViewModel()
-
 
 
     val playSong: (Long, SongFilter) -> Unit = { songId, filter ->
@@ -177,11 +152,13 @@ fun AppNavigation(
         ) {
             composable<NavScreen.Launch.Splash> {}
 
-            composable<NavScreen.Launch.Onboarding>{
+            composable<NavScreen.Launch.Onboarding> {
                 OnboardingScreen(onOnboardingComplete = {
+                    viewModel.syncMedia()
                     navController.navigate(startDestination) {
                         popUpTo(NavScreen.Launch.Onboarding) { inclusive = true }
                     }
+                    viewModel.setOnboardingCompleted()
                 })
             }
 
@@ -261,7 +238,7 @@ private fun NavGraphBuilder.mainScreenNavigation(
     onAlbumClick: (Long) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
     onPlaylistClick: (Long) -> Unit = {},
-){
+) {
     val onNavigationItemClick = { screen: NavScreen ->
         navController.navigate(screen)
     }
@@ -329,7 +306,7 @@ private fun NavGraphBuilder.songsNavigation(
     onBackClick: () -> Unit = {},
     onMenuClick: (Long) -> Unit = {},
     playSongExtra: (Long, SongFilter, Boolean, Int) -> Unit = { _, _, _, _ -> }
-){
+) {
     composable<NavScreen.Songs.Album> {
         AlbumSongs(
             playerViewModel = playerViewModel,
@@ -356,20 +333,20 @@ private fun NavGraphBuilder.songsNavigation(
     }
 }
 
-private fun NavGraphBuilder.settingNavigation(){
-    composable< NavScreen.Settings.General> {
+private fun NavGraphBuilder.settingNavigation() {
+    composable<NavScreen.Settings.General> {
         GeneralSettingScreen()
     }
     composable<NavScreen.Settings.Audio> {
         AudioSettingScreen()
     }
-    composable< NavScreen.Settings.Notifications> {
+    composable<NavScreen.Settings.Notifications> {
         NotificationSettingScreen()
     }
-    composable< NavScreen.Settings.Advanced> {
+    composable<NavScreen.Settings.Advanced> {
         AdvanceSettingScreen()
     }
-    composable< NavScreen.Settings.Library> {
+    composable<NavScreen.Settings.Library> {
         LibrarySettingScreen()
     }
 }

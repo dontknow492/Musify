@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -44,8 +43,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        installSplashScreen().apply{
-            setKeepOnScreenCondition{
+        installSplashScreen().apply {
+            setKeepOnScreenCondition {
                 mainViewModel.uiState.value == MainUiState.Loading
             }
         }
@@ -55,16 +54,13 @@ class MainActivity : ComponentActivity() {
             MusifyTheme(
                 dynamicColor = false
             ) {
-//                val start = NavScreen.AlbumSongs(1312244804222984308L)
                 val start = NavScreen.Main.Home
-                RequestAudioPermission {
-                    AppNavigation(
-                        navController = navController,
-                        startDestination = start,
-                        viewModel = mainViewModel,
-                        playerViewModel = playerViewModel
-                    )
-                }
+                AppNavigation(
+                    navController = navController,
+                    startDestination = start,
+                    viewModel = mainViewModel,
+                    playerViewModel = playerViewModel
+                )
             }
         }
     }

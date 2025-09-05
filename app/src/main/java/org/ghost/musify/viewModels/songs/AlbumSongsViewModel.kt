@@ -70,8 +70,7 @@ class AlbumSongsViewModel @Inject constructor(
             _searchQuery,
             _sortBy,
             _sortOrder
-        ){
-            id, query, sortBy, sortOrder ->
+        ) { id, query, sortBy, sortOrder ->
             SongRequestParameters(
                 id = id,
                 query = query,
@@ -79,16 +78,16 @@ class AlbumSongsViewModel @Inject constructor(
                 sortOrder = sortOrder
             )
         }
-        .filterNotNull()
-        .flatMapLatest { songRequestParameters ->
-            repository.getAllSongs(
-                query = _searchQuery.value,
-                sortBy = _sortBy.value,
-                sortOrder = _sortOrder.value,
-                albumId = songRequestParameters.id,
-            )
-        }
-        .cachedIn(viewModelScope)
+            .filterNotNull()
+            .flatMapLatest { songRequestParameters ->
+                repository.getAllSongs(
+                    query = _searchQuery.value,
+                    sortBy = _sortBy.value,
+                    sortOrder = _sortOrder.value,
+                    albumId = songRequestParameters.id,
+                )
+            }
+            .cachedIn(viewModelScope)
 
     // The single StateFlow that the UI will observe
 

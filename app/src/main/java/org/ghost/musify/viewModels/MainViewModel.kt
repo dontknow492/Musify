@@ -1,5 +1,6 @@
 package org.ghost.musify.viewModels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,9 +25,10 @@ sealed class MainUiState {
 class MainViewModel @Inject constructor(
     private val onboardingManager: OnboardingManager,
     private val musicRepository: MusicRepository
-): ViewModel() {
+) : ViewModel() {
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Loading)
     val uiState = _uiState.asStateFlow()
+
 
     init {
         // This block runs when the ViewModel is created
@@ -41,6 +43,9 @@ class MainViewModel @Inject constructor(
             // 2. Check the onboarding status (sequential task)
             val isOnboardingCompleted = onboardingManager.isOnboardingCompleted.first()
 
+
+            Log.d("MainViewModel", "MainViewModel: isOnboardingCompleted = $isOnboardingCompleted")
+
             // 3. Update the state to trigger navigation
             if (isOnboardingCompleted) {
                 _uiState.value = MainUiState.NavigateToMainApp
@@ -48,5 +53,19 @@ class MainViewModel @Inject constructor(
                 _uiState.value = MainUiState.NavigateToOnboarding
             }
         }
+    }
+
+    fun syncMedia() {
+        viewModelScope.launch {
+            musicRepository.syncMediaStore()
+        }
+    }
+
+
+    fun setOnboardingCompleted() {
+        viewModelScope.launch {
+            onboardingManager.setOnboardingCompleted()
+        }
+
     }
 }

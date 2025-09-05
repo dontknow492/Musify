@@ -135,29 +135,48 @@ class SettingsRepository @Inject constructor(private val context: Context) {
         val useMaterialYou = preferences[SettingsKeys.MATERIAL_YOU] ?: default.useMaterialYou
         val accentColor = preferences[SettingsKeys.ACCENT_COLOR] ?: default.accentColor
         val language = preferences[SettingsKeys.LANGUAGE] ?: default.language
-        val startScreen = StartScreen.valueOf(preferences[SettingsKeys.START_SCREEN] ?: default.startScreen.name)
+        val startScreen =
+            StartScreen.valueOf(preferences[SettingsKeys.START_SCREEN] ?: default.startScreen.name)
 
         // Audio & Playback
-        val crossfadeEnabled = preferences[SettingsKeys.CROSSFADE_ENABLED] ?: default.crossfadeEnabled
-        val crossfadeDuration = preferences[SettingsKeys.CROSSFADE_DURATION] ?: default.crossfadeDuration
-        val useGaplessPlayback = preferences[SettingsKeys.GAPLESS_PLAYBACK] ?: default.useGaplessPlayback
-        val audioFocusSetting = AudioFocus.valueOf(preferences[SettingsKeys.AUDIO_FOCUS] ?: default.audioFocusSetting.name)
-        val headsetPlugAction = HeadsetPlugAction.valueOf(preferences[SettingsKeys.HEADSET_PLUG_ACTION] ?: default.headsetPlugAction.name)
-        val bluetoothAutoplay = preferences[SettingsKeys.BLUETOOTH_AUTOPLAY] ?: default.bluetoothAutoplay
+        val crossfadeEnabled =
+            preferences[SettingsKeys.CROSSFADE_ENABLED] ?: default.crossfadeEnabled
+        val crossfadeDuration =
+            preferences[SettingsKeys.CROSSFADE_DURATION] ?: default.crossfadeDuration
+        val useGaplessPlayback =
+            preferences[SettingsKeys.GAPLESS_PLAYBACK] ?: default.useGaplessPlayback
+        val audioFocusSetting = AudioFocus.valueOf(
+            preferences[SettingsKeys.AUDIO_FOCUS] ?: default.audioFocusSetting.name
+        )
+        val headsetPlugAction = HeadsetPlugAction.valueOf(
+            preferences[SettingsKeys.HEADSET_PLUG_ACTION] ?: default.headsetPlugAction.name
+        )
+        val bluetoothAutoplay =
+            preferences[SettingsKeys.BLUETOOTH_AUTOPLAY] ?: default.bluetoothAutoplay
 
         // Library & Metadata
         val musicFolders = preferences[SettingsKeys.MUSIC_FOLDERS] ?: default.musicFolders
-        val automaticScanning = preferences[SettingsKeys.AUTOMATIC_SCANNING] ?: default.automaticScanning
-        val ignoreShortTracks = preferences[SettingsKeys.IGNORE_SHORT_TRACKS] ?: default.ignoreShortTracks
-        val ignoreShortTracksDuration = preferences[SettingsKeys.IGNORE_SHORT_TRACKS_DURATION] ?: default.ignoreShortTracksDuration
-        val downloadAlbumArt = preferences[SettingsKeys.DOWNLOAD_ALBUM_ART] ?: default.downloadAlbumArt
-        val preferEmbeddedArt = preferences[SettingsKeys.PREFER_EMBEDDED_ART] ?: default.preferEmbeddedArt
-        val downloadOnWifiOnly = preferences[SettingsKeys.DOWNLOAD_ON_WIFI_ONLY] ?: default.downloadOnWifiOnly
+        val automaticScanning =
+            preferences[SettingsKeys.AUTOMATIC_SCANNING] ?: default.automaticScanning
+        val ignoreShortTracks =
+            preferences[SettingsKeys.IGNORE_SHORT_TRACKS] ?: default.ignoreShortTracks
+        val ignoreShortTracksDuration = preferences[SettingsKeys.IGNORE_SHORT_TRACKS_DURATION]
+            ?: default.ignoreShortTracksDuration
+        val downloadAlbumArt =
+            preferences[SettingsKeys.DOWNLOAD_ALBUM_ART] ?: default.downloadAlbumArt
+        val preferEmbeddedArt =
+            preferences[SettingsKeys.PREFER_EMBEDDED_ART] ?: default.preferEmbeddedArt
+        val downloadOnWifiOnly =
+            preferences[SettingsKeys.DOWNLOAD_ON_WIFI_ONLY] ?: default.downloadOnWifiOnly
 
         // Notifications & Widgets
-        val notificationStyle = NotificationStyle.valueOf(preferences[SettingsKeys.NOTIFICATION_STYLE] ?: default.notificationStyle.name)
-        val useColorizedNotification = preferences[SettingsKeys.COLORIZED_NOTIFICATION] ?: default.useColorizedNotification
-        val showSeekBarInNotification = preferences[SettingsKeys.SEEK_BAR_IN_NOTIFICATION] ?: default.showSeekBarInNotification
+        val notificationStyle = NotificationStyle.valueOf(
+            preferences[SettingsKeys.NOTIFICATION_STYLE] ?: default.notificationStyle.name
+        )
+        val useColorizedNotification =
+            preferences[SettingsKeys.COLORIZED_NOTIFICATION] ?: default.useColorizedNotification
+        val showSeekBarInNotification =
+            preferences[SettingsKeys.SEEK_BAR_IN_NOTIFICATION] ?: default.showSeekBarInNotification
 
         // Advanced
         val excludedFolders = preferences[SettingsKeys.EXCLUDED_FOLDERS] ?: default.excludedFolders

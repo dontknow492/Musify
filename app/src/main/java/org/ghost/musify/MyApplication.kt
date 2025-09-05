@@ -5,7 +5,6 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.decode.BitmapFactoryDecoder
-import coil3.util.DebugLogger
 import dagger.hilt.android.HiltAndroidApp
 
 
@@ -16,7 +15,7 @@ class MyApplication : Application(), SingletonImageLoader.Factory {
             .components {
                 add(BitmapFactoryDecoder.Factory())
             }
-            .logger(DebugLogger())
+//            .logger(DebugLogger())
             .build()
     }
 

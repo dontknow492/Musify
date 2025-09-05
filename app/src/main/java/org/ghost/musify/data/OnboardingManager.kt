@@ -14,7 +14,7 @@ import javax.inject.Inject
 // Create the DataStore instance
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class OnboardingManager @Inject constructor( @param: ApplicationContext private val context: Context) {
+class OnboardingManager @Inject constructor(@param: ApplicationContext private val context: Context) {
 
     // Define a key for our boolean flag
     companion object {

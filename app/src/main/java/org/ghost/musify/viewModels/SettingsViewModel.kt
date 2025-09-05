@@ -11,9 +11,9 @@ import org.ghost.musify.data.AppSettings
 import org.ghost.musify.enums.AudioFocus
 import org.ghost.musify.enums.HeadsetPlugAction
 import org.ghost.musify.enums.NotificationStyle
-import org.ghost.musify.repository.SettingsRepository
 import org.ghost.musify.enums.StartScreen
 import org.ghost.musify.enums.Theme
+import org.ghost.musify.repository.SettingsRepository
 
 class SettingsViewModel(private val repository: SettingsRepository) : ViewModel() {
 

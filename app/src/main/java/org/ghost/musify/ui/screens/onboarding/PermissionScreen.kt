@@ -6,23 +6,38 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.google.accompanist.permissions.*
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import org.ghost.musify.R
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -139,17 +154,34 @@ fun PermissionItem(
 ) {
     val permissionData = remember(permissionState.permission) {
         when (permissionState.permission) {
-            Manifest.permission.READ_MEDIA_AUDIO -> PermissionData("Read Audio", "To play and manage your music files.")
-            Manifest.permission.READ_MEDIA_IMAGES -> PermissionData("Read Images", "To display your photos and videos.")
-            Manifest.permission.POST_NOTIFICATIONS -> PermissionData("Send Notifications", "To keep you updated with important alerts.")
-            Manifest.permission.READ_EXTERNAL_STORAGE -> PermissionData("Read Storage", "To access files on your device.")
+            Manifest.permission.READ_MEDIA_AUDIO -> PermissionData(
+                "Read Audio",
+                "To play and manage your music files."
+            )
+
+            Manifest.permission.READ_MEDIA_IMAGES -> PermissionData(
+                "Read Images",
+                "To display your photos and videos."
+            )
+
+            Manifest.permission.POST_NOTIFICATIONS -> PermissionData(
+                "Send Notifications",
+                "To keep you updated with important alerts."
+            )
+
+            Manifest.permission.READ_EXTERNAL_STORAGE -> PermissionData(
+                "Read Storage",
+                "To access files on your device."
+            )
+
             else -> PermissionData("Unknown Permission", "An unknown permission is required.")
         }
     }
 
     val isGranted = permissionState.status.isGranted
     val icon = if (isGranted) Icons.Default.CheckCircle else Icons.Default.Warning
-    val color = if (isGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+    val color =
+        if (isGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
 
     Card(
         modifier = modifier.fillMaxWidth(),

@@ -53,12 +53,11 @@ class PlaylistSongsViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val playlistSongsPagingFLow: Flow<PagingData<SongWithAlbumAndArtist>> =
         combine(
-        playlistIdFlow.filterNotNull(),
-        _searchQuery,
-        _sortBy,
-        _sortOrder
-        ){
-            id, query, sortBy, sortOrder ->
+            playlistIdFlow.filterNotNull(),
+            _searchQuery,
+            _sortBy,
+            _sortOrder
+        ) { id, query, sortBy, sortOrder ->
             SongRequestParameters(
                 id = id,
                 query = query,
@@ -66,65 +65,65 @@ class PlaylistSongsViewModel @Inject constructor(
                 sortOrder = sortOrder
             )
         }
-        .filterNotNull()
-        .flatMapLatest { songRequestParameters ->
-            repository.getPlaylistSongs(
-                query = _searchQuery.value,
-                sortBy = _sortBy.value,
-                sortOrder = _sortOrder.value,
-                playlistId = songRequestParameters.id,
-            )
-        }
-        .cachedIn(viewModelScope)
+            .filterNotNull()
+            .flatMapLatest { songRequestParameters ->
+                repository.getPlaylistSongs(
+                    query = _searchQuery.value,
+                    sortBy = _sortBy.value,
+                    sortOrder = _sortOrder.value,
+                    playlistId = songRequestParameters.id,
+                )
+            }
+            .cachedIn(viewModelScope)
 
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<PlaylistSongsUiState> = playlistIdFlow
         .flatMapLatest { playlistId ->
-                if (playlistId == null) {
-                    return@flatMapLatest flowOf(PlaylistSongsUiState(isLoading = true))
-                }
-                combine(
-                    repository.getPlaylistById(playlistId), // Trigger updates when the ID changes
-                    _isPlaying,
-                    _isShuffled,
-                    _searchQuery,
-                    _sortBy,
-                    _sortOrder,
-                    repository.getPlaylistSongsCount(playlistId),
-                ) { values ->
-                    val playlist = values[0] as PlaylistEntity?
-                    val isPlaying = values[1] as Boolean
-                    val isShuffled = values[2] as Boolean
-                    val searchQuery = values[3] as String
-                    val sortBy = values[4] as SortBy
-                    val sortOrder = values[5] as SortOrder
-                    val count = values[6] as Int
+            if (playlistId == null) {
+                return@flatMapLatest flowOf(PlaylistSongsUiState(isLoading = true))
+            }
+            combine(
+                repository.getPlaylistById(playlistId), // Trigger updates when the ID changes
+                _isPlaying,
+                _isShuffled,
+                _searchQuery,
+                _sortBy,
+                _sortOrder,
+                repository.getPlaylistSongsCount(playlistId),
+            ) { values ->
+                val playlist = values[0] as PlaylistEntity?
+                val isPlaying = values[1] as Boolean
+                val isShuffled = values[2] as Boolean
+                val searchQuery = values[3] as String
+                val sortBy = values[4] as SortBy
+                val sortOrder = values[5] as SortOrder
+                val count = values[6] as Int
 
-                    PlaylistSongsUiState(
-                        playlist = playlist,
-                        songsCount = count,
-                        songs = playlistSongsPagingFLow, // Assign the paging flow here
-                        searchQuery = searchQuery,
-                        sortOrder = sortOrder,
-                        sortBy = sortBy,
-                        isPlaying = isPlaying,
-                        isShuffled = isShuffled,
-                        isLoading = false // Data has loaded
-                    )
-                }
+                PlaylistSongsUiState(
+                    playlist = playlist,
+                    songsCount = count,
+                    songs = playlistSongsPagingFLow, // Assign the paging flow here
+                    searchQuery = searchQuery,
+                    sortOrder = sortOrder,
+                    sortBy = sortBy,
+                    isPlaying = isPlaying,
+                    isShuffled = isShuffled,
+                    isLoading = false // Data has loaded
+                )
             }
+        }
         // Use combine to merge multiple data sources
-            .catch { e ->
-                // In case of an error from the repository flows
-                emit(PlaylistSongsUiState(isLoading = false, error = e.localizedMessage))
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                // The initial state before any flows have emitted
-                initialValue = PlaylistSongsUiState(isLoading = true)
-            )
+        .catch { e ->
+            // In case of an error from the repository flows
+            emit(PlaylistSongsUiState(isLoading = false, error = e.localizedMessage))
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            // The initial state before any flows have emitted
+            initialValue = PlaylistSongsUiState(isLoading = true)
+        )
 
     // --- Public functions to modify the state from the UI ---
 

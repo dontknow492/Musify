@@ -64,8 +64,7 @@ class ArtistSongsViewModel @Inject constructor(
             _searchQuery,
             _sortBy,
             _sortOrder
-        ){
-                name, query, sortBy, sortOrder ->
+        ) { name, query, sortBy, sortOrder ->
             SongRequestNameParameters(
                 name = name,
                 query = query,
@@ -73,15 +72,15 @@ class ArtistSongsViewModel @Inject constructor(
                 sortOrder = sortOrder
             )
         }
-        .filterNotNull()
-        .flatMapLatest { songRequestParameters ->
-            repository.getAllSongs(
-                query = _searchQuery.value,
-                sortBy = _sortBy.value,
-                sortOrder = _sortOrder.value,
-                artist = songRequestParameters.name
-            )
-        }.cachedIn(viewModelScope)
+            .filterNotNull()
+            .flatMapLatest { songRequestParameters ->
+                repository.getAllSongs(
+                    query = _searchQuery.value,
+                    sortBy = _sortBy.value,
+                    sortOrder = _sortOrder.value,
+                    artist = songRequestParameters.name
+                )
+            }.cachedIn(viewModelScope)
 
 
     @OptIn(ExperimentalCoroutinesApi::class)

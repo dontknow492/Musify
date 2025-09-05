@@ -225,7 +225,7 @@ class PlayerViewModel @Inject constructor(
         val controller = mediaController ?: return
         val songId = controller.currentMediaItem?.mediaId?.toLongOrNull()
 
-        val currentSong = songId?.let{ songIdToSongMap[it]}
+        val currentSong = songId?.let { songIdToSongMap[it] }
         _currentSong.value = currentSong
 
         _uiState.update { currentState ->
@@ -459,7 +459,7 @@ class PlayerViewModel @Inject constructor(
     }
 
 
-    fun seekToSong(songId: Long){
+    fun seekToSong(songId: Long) {
         viewModelScope.launch {
             val controller = waitForController() ?: run {
                 Log.e("PlayerViewModel", "Seek command failed: Controller not available.")
