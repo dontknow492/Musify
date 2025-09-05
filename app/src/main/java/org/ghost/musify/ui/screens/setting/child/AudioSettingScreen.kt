@@ -16,12 +16,13 @@ import org.ghost.musify.ui.screens.setting.SettingChildScreen
 @Composable
 fun AudioSettingScreen(modifier: Modifier = Modifier) {
     SettingChildScreen(
+        modifier = modifier,
         title = "Audio & Playback",
-    ){
+    ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Crossfade",
                     description = "Enable or disable crossfade between songs",
@@ -30,7 +31,7 @@ fun AudioSettingScreen(modifier: Modifier = Modifier) {
                     onCheckedChange = {}
                 )
             }
-            item{
+            item {
                 SettingsInputItem(
                     title = "Crossfade Duration",
                     description = "Set the duration of crossfade in seconds",
@@ -42,7 +43,7 @@ fun AudioSettingScreen(modifier: Modifier = Modifier) {
                     )
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Use Gapless Playback",
                     description = "Enable or disable gapless playback",
@@ -62,7 +63,7 @@ fun AudioSettingScreen(modifier: Modifier = Modifier) {
                     searchQuery = ""
                 )
             }
-            item{
+            item {
                 SettingsCollapsibleEnumItem(
                     title = "Headset plug action",
                     description = "Set the action to take when the headset is plugged in",
@@ -71,7 +72,7 @@ fun AudioSettingScreen(modifier: Modifier = Modifier) {
                     onSelectionChange = {},
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Bluetooth Autoplay",
                     description = "Set Bluetooth autoplay",

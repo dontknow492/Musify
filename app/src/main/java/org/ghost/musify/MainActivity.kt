@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -32,9 +33,15 @@ import org.ghost.musify.ui.theme.MusifyTheme
 class MainActivity : ComponentActivity() {
     lateinit var navController: NavHostController
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        installSplashScreen().apply{
+            setKeepOnScreenCondition{
+                false
+            }
+        }
         enableEdgeToEdge()
         setContent {
             navController = rememberNavController()
@@ -42,7 +49,7 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = false
             ) {
 //                val start = NavScreen.AlbumSongs(1312244804222984308L)
-                val start = NavScreen.Setting
+                val start = NavScreen.Home
                 RequestAudioPermission {
                     AppNavigation(
                         navController = navController,

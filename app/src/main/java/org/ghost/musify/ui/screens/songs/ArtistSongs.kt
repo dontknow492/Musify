@@ -88,7 +88,7 @@ fun ArtistSongs(
             onBackClick = onBackClick,
             onMenuClick = onMenuClick,
             onSearchChange = viewModel::setSearchQuery
-        ){
+        ) {
             SortFilterSheet(
                 availableSortBy = viewModel.availableSortBy,
                 onSortChange = viewModel::changeSortBy,

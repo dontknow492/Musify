@@ -24,29 +24,32 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
+import kotlinx.coroutines.launch
+import org.ghost.musify.data.OnboardingManager
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
+import org.ghost.musify.ui.components.AppNavigationBar
+import org.ghost.musify.ui.dialog.AddToPlaylistDialog
+import org.ghost.musify.ui.dialog.menu.SongMenu
+import org.ghost.musify.ui.models.SongFilter
 import org.ghost.musify.ui.screens.BottomPlayer
 import org.ghost.musify.ui.screens.HistoryScreen
 import org.ghost.musify.ui.screens.HomeScreen
 import org.ghost.musify.ui.screens.PlayerWindow
 import org.ghost.musify.ui.screens.SearchScreen
-import org.ghost.musify.ui.components.AppNavigationBar
-import org.ghost.musify.ui.dialog.AddToPlaylistDialog
-import org.ghost.musify.ui.dialog.menu.SongMenu
-import org.ghost.musify.ui.models.SongFilter
+import org.ghost.musify.ui.screens.onboarding.OnboardingScreen
 import org.ghost.musify.ui.screens.setting.SettingsScreen
 import org.ghost.musify.ui.screens.setting.child.AdvanceSettingScreen
 import org.ghost.musify.ui.screens.setting.child.AudioSettingScreen
@@ -63,6 +66,8 @@ import org.ghost.musify.viewModels.SearchViewModel
 import org.ghost.musify.viewModels.SongViewModel
 import org.ghost.musify.viewModels.home.MusicViewModel
 
+const val TAG = "NavigationHandler"
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 @RequiresApi(Build.VERSION_CODES.Q)
 @Composable
@@ -71,6 +76,49 @@ fun AppNavigation(
     navController: NavHostController,
     startDestination: NavScreen = NavScreen.Home
 ) {
+    val context = LocalContext.current
+
+    val coroutineScope = rememberCoroutineScope()
+
+    // Instantiate your manager
+    val onboardingManager = remember { OnboardingManager(context) }
+
+    // Collect the Flow as state. `initialValue = false` assumes onboarding is not complete
+    // until DataStore confirms otherwise.
+    val isOnboardingCompleted by onboardingManager.isOnboardingCompleted.collectAsState(initial = false)
+
+    // Based on the flag, decide which screen to show
+    if (isOnboardingCompleted) {
+        // If onboarding is complete, show your main app screen
+        MainAppScreen(
+            modifier = modifier,
+            navController = navController,
+            startDestination = startDestination
+        ) // Replace with your actual main app composable
+    } else {
+        // If onboarding is not complete, show the onboarding flow
+        OnboardingScreen(
+            onOnboardingComplete = {
+                // When onboarding finishes, launch a coroutine to update the flag
+                coroutineScope.launch {
+                    onboardingManager.setOnboardingCompleted()
+                }
+            }
+        )
+    }
+
+}
+
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@RequiresApi(Build.VERSION_CODES.Q)
+@Composable
+fun MainAppScreen(
+    modifier: Modifier = Modifier,
+    navController: NavHostController,
+    startDestination: NavScreen = NavScreen.Home
+) {
+
     var currentScreen by remember { mutableStateOf(startDestination) }
     var previousScreen by remember { mutableStateOf<NavScreen?>(null) }
     var searchViewModel: SearchViewModel = hiltViewModel()
@@ -79,9 +127,6 @@ fun AppNavigation(
     val historyViewModel: HistoryViewModel = hiltViewModel()
 
     val currentPlay by playerViewModel.uiState.collectAsState()
-
-    val TAG = "NavigationHandler"
-
 
     val playSong: (Long, SongFilter) -> Unit = { songId, filter ->
         Log.d(TAG, "playSong: Playing song with ID $songId from filter: $filter")
@@ -135,7 +180,6 @@ fun AppNavigation(
         navController.popBackStack()
         currentScreen = previousScreen ?: NavScreen.Home
     }
-
 
     SharedTransitionLayout(
         modifier = modifier
@@ -205,8 +249,11 @@ fun AppNavigation(
                     navController = navController,
                     startDestination = startDestination,
                     modifier = Modifier.padding(
-                        bottom = max(0.dp, innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues()
-                            .calculateBottomPadding()),
+                        bottom = max(
+                            0.dp,
+                            innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues()
+                                .calculateBottomPadding()
+                        ),
                         start = innerPadding.calculateLeftPadding(LocalLayoutDirection.current),
                         end = innerPadding.calculateRightPadding(LocalLayoutDirection.current)
                     )
@@ -347,35 +394,35 @@ fun AppNavigation(
                     // setting
 
 
-                    composable< SettingScreen.GeneralSettings>{
+                    composable<SettingScreen.GeneralSettings> {
                         LaunchedEffect(Unit) {
                             previousScreen = currentScreen
                             currentScreen = SettingScreen.GeneralSettings
                         }
                         GeneralSettingScreen()
                     }
-                    composable< SettingScreen.AudioSettings>{
+                    composable<SettingScreen.AudioSettings> {
                         LaunchedEffect(Unit) {
                             previousScreen = currentScreen
                             currentScreen = SettingScreen.AudioSettings
                         }
                         AudioSettingScreen()
                     }
-                    composable< SettingScreen.NotificationsSettings>{
+                    composable<SettingScreen.NotificationsSettings> {
                         LaunchedEffect(Unit) {
                             previousScreen = currentScreen
                             currentScreen = SettingScreen.NotificationsSettings
                         }
                         NotificationSettingScreen()
                     }
-                    composable< SettingScreen.AdvancedSettings>{
+                    composable<SettingScreen.AdvancedSettings> {
                         LaunchedEffect(Unit) {
                             previousScreen = currentScreen
                             currentScreen = SettingScreen.AdvancedSettings
                         }
                         AdvanceSettingScreen()
                     }
-                    composable< SettingScreen.LibrarySettings>{
+                    composable<SettingScreen.LibrarySettings> {
                         LaunchedEffect(Unit) {
                             previousScreen = currentScreen
                             currentScreen = SettingScreen.LibrarySettings
@@ -387,6 +434,7 @@ fun AppNavigation(
 
         }
     }
+
 }
 
 

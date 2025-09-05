@@ -77,10 +77,10 @@ import coil3.request.ImageRequest
 import coil3.request.error
 import org.ghost.musify.R
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
+import org.ghost.musify.ui.components.SwipeableSongItem
 import org.ghost.musify.ui.components.common.CircularProgressBar
 import org.ghost.musify.ui.components.common.PlayPauseButton
 import org.ghost.musify.ui.components.common.VolumeControlButton
-import org.ghost.musify.ui.components.SwipeableSongItem
 import org.ghost.musify.ui.dialog.MusicInfoDialog
 import org.ghost.musify.ui.dialog.menu.SongQueueMenu
 import org.ghost.musify.utils.DynamicThemeFromImage
@@ -120,7 +120,7 @@ fun PlayerWindow(
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     LaunchedEffect(songId ?: Unit) {
-        songId?.let{
+        songId?.let {
             imageUri = cacheEmbeddedArts(context, getSongUri(songId))
         }
         Log.d("Player Window", "songId: $songId")
@@ -180,7 +180,7 @@ fun PlayerWindow(
                 }
             )
         }
-        if(isSongMenuVisible && songMenuId != -1L) {
+        if (isSongMenuVisible && songMenuId != -1L) {
             SongQueueMenu(
                 songId = songMenuId,
                 onDismissRequest = { isSongMenuVisible = false },
@@ -190,7 +190,6 @@ fun PlayerWindow(
         }
 
     }
-
 
 
 }
@@ -271,16 +270,18 @@ fun PlayerBottomSheet(
                                     onSongRemove(song.song.id)
                                     true
                                 }
+
                                 SwipeToDismissBoxValue.EndToStart -> {
                                     onSongRemove(song.song.id)
                                     true
                                 }
+
                                 SwipeToDismissBoxValue.Settled -> false
                             }
                         },
                     )
 
-                    val modifier = if(song.song.id == currentSongId)
+                    val modifier = if (song.song.id == currentSongId)
 
                         Modifier
                             .border(
@@ -291,7 +292,7 @@ fun PlayerBottomSheet(
                     else
                         Modifier
 
-                    val cardElevation = if(song.song.id == currentSongId)
+                    val cardElevation = if (song.song.id == currentSongId)
                         CardDefaults.cardElevation(defaultElevation = 12.dp)
                     else
                         CardDefaults.cardElevation()
@@ -315,7 +316,7 @@ fun PlayerBottomSheet(
                                         MaterialTheme.colorScheme.errorContainer
                                     )
                                     .padding(16.dp)
-                            ){
+                            ) {
                                 Icon(
                                     modifier = Modifier.align(Alignment.CenterStart),
                                     imageVector = Icons.Filled.Delete,
@@ -332,7 +333,7 @@ fun PlayerBottomSheet(
                                         MaterialTheme.colorScheme.errorContainer
                                     )
                                     .padding(16.dp)
-                            ){
+                            ) {
                                 Icon(
                                     imageVector = Icons.Filled.Delete,
                                     modifier = Modifier.align(Alignment.CenterEnd),
@@ -348,7 +349,6 @@ fun PlayerBottomSheet(
         }
     }
 }
-
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -629,8 +629,8 @@ fun SpeedButton(
     var isExpanded by remember { mutableStateOf(false) }
 
     TextButton(
-        onClick = { isExpanded = !isExpanded}
-    ){
+        onClick = { isExpanded = !isExpanded }
+    ) {
         Text(
             text = "$currentSpeed X",
             style = MaterialTheme.typography.bodyLarge,
@@ -640,7 +640,7 @@ fun SpeedButton(
         if (isExpanded) {
             DropdownMenu(
                 expanded = true,
-                onDismissRequest = { isExpanded = false}
+                onDismissRequest = { isExpanded = false }
             ) {
                 speeds.forEach { speed ->
                     DropdownMenuItem(
@@ -655,8 +655,6 @@ fun SpeedButton(
         }
     }
 }
-
-
 
 
 @RequiresApi(Build.VERSION_CODES.O)

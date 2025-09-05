@@ -12,12 +12,13 @@ import org.ghost.musify.ui.screens.setting.SettingChildScreen
 @Composable
 fun NotificationSettingScreen(modifier: Modifier = Modifier) {
     SettingChildScreen(
+        modifier = modifier,
         title = "Notification",
-    ){
+    ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
-            item{
+            item {
                 SettingsCollapsibleEnumItem(
                     title = "Notification Style",
                     description = "Choose the style of notifications",
@@ -27,7 +28,7 @@ fun NotificationSettingScreen(modifier: Modifier = Modifier) {
                     searchQuery = ""
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Use Colorized Notification",
                     description = "Enable or disable colorized notifications",
@@ -36,7 +37,7 @@ fun NotificationSettingScreen(modifier: Modifier = Modifier) {
                     onCheckedChange = {}
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Show SeekBar in Notification",
                     description = "Enable or disable showing the seekbar in notifications",

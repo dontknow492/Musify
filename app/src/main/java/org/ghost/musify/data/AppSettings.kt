@@ -1,4 +1,4 @@
-package org.ghost.musify
+package org.ghost.musify.data
 
 import org.ghost.musify.enums.AudioFocus
 import org.ghost.musify.enums.HeadsetPlugAction
@@ -12,7 +12,7 @@ data class AppSettings(
     val useMaterialYou: Boolean = true,
     val accentColor: Int = 0xFF6200EE.toInt(), // Default purple color
     val language: String = "system",
-    val startScreen: StartScreen = StartScreen.LIBRARY,
+    val startScreen: StartScreen = StartScreen.Home,
 
     // Audio & Playback
     val crossfadeEnabled: Boolean = false,

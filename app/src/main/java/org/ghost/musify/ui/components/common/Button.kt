@@ -33,7 +33,7 @@ fun PlayPauseButton(
     onClick: () -> Unit,
     isPlaying: Boolean,
     iconSize: Dp = 60.dp,
-){
+) {
     IconButton(
         modifier = modifier,
         onClick = onClick,

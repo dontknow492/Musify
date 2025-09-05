@@ -53,12 +53,12 @@ fun SongGroupWindow(
     onPlayClick: () -> Unit,
     onCardClick: (Long) -> Unit,
     onMenuClick: (Long) -> Unit,
-    onSearchChange: (String) ->Unit,
+    onSearchChange: (String) -> Unit,
     onShuffleClick: () -> Unit,
     onBackClick: () -> Unit,
     bottomSheetContent: @Composable (ColumnScope.() -> Unit) = {}
 ) {
-    var isBottomSheetVisible by remember {  mutableStateOf(false) }
+    var isBottomSheetVisible by remember { mutableStateOf(false) }
 
     val data = data.copy(
         title = if (data.title.isEmpty() || data.title == "<unknown>") "Unknown" else data.title,
@@ -116,7 +116,7 @@ fun SongGroupWindow(
             )
         }
     }
-    if(isBottomSheetVisible){
+    if (isBottomSheetVisible) {
         ModalBottomSheet(
             onDismissRequest = { isBottomSheetVisible = false },
         ) {

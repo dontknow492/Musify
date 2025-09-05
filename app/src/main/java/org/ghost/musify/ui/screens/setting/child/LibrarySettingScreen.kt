@@ -16,12 +16,13 @@ import org.ghost.musify.ui.screens.setting.SettingChildScreen
 @Preview(showSystemUi = true)
 fun LibrarySettingScreen(modifier: Modifier = Modifier) {
     SettingChildScreen(
+        modifier = modifier,
         title = "Library & Metadata",
-    ){
+    ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
-            item{
+            item {
                 SettingsEditableListItem(
                     title = "Music folders",
                     description = "folder to scan for musics",
@@ -31,7 +32,7 @@ fun LibrarySettingScreen(modifier: Modifier = Modifier) {
                     searchQuery = "",
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Automatic scan",
                     description = "Enable or disable automatic scanning of musics onto device",
@@ -40,7 +41,7 @@ fun LibrarySettingScreen(modifier: Modifier = Modifier) {
                     onCheckedChange = {}
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Download Album Art",
                     description = "Enable or disable automatic downloading of album art",
@@ -49,7 +50,7 @@ fun LibrarySettingScreen(modifier: Modifier = Modifier) {
                     onCheckedChange = {}
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Prefer Embedded Art",
                     description = "Enable or disable using embedded album art",
@@ -58,7 +59,7 @@ fun LibrarySettingScreen(modifier: Modifier = Modifier) {
                     onCheckedChange = {}
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Download on Wifi Only",
                     description = "Enable or disable downloading on Wi-Fi only",
@@ -67,7 +68,7 @@ fun LibrarySettingScreen(modifier: Modifier = Modifier) {
                     onCheckedChange = {}
                 )
             }
-            item{
+            item {
                 SettingsSwitchItem(
                     title = "Ignore Short Tracks",
                     description = "Enable or disable ignoring short tracks",
@@ -76,7 +77,7 @@ fun LibrarySettingScreen(modifier: Modifier = Modifier) {
                     onCheckedChange = {}
                 )
             }
-            item{
+            item {
                 SettingsInputItem(
                     title = "Ignore Short Tracks Duration",
                     description = "Set the duration of short tracks in seconds",

@@ -13,8 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import org.ghost.musify.R
-import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.ui.models.BottomNavigationData
+import org.ghost.musify.ui.navigation.NavScreen
 
 @Composable
 fun AppNavigationBar(

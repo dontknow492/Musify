@@ -1,4 +1,4 @@
-package org.ghost.musify
+package org.ghost.musify.data
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey

@@ -64,7 +64,7 @@ fun AlbumSongs(
             headingTitle = "Songs",
             search = uiState.searchQuery,
 
-        )
+            )
 
         Log.d("AlbumSongs", "AlbumSongs: $albumData")
 
@@ -102,7 +102,7 @@ fun AlbumSongs(
             onBackClick = onBackClick,
             onMenuClick = onMenuClick,
             onSearchChange = viewModel::setSearchQuery,
-        ){
+        ) {
             SortFilterSheet(
                 modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
                 availableSortBy = viewModel.availableSortBy,
@@ -130,7 +130,7 @@ fun SortFilterSheet(
     val sortOrders = listOf(SortOrder.ASCENDING, SortOrder.DESCENDING)
     Column(
         modifier = modifier
-    ){
+    ) {
         Text(
             "Sort order",
             style = MaterialTheme.typography.titleMedium,
@@ -165,13 +165,18 @@ fun SortFilterSheet(
 
 
 @Composable
-fun CheckButton(modifier: Modifier = Modifier, label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun CheckButton(
+    modifier: Modifier = Modifier,
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Row(
         modifier = modifier.clickable(
             onClick = { onCheckedChange(!checked) }
         ),
         verticalAlignment = Alignment.CenterVertically
-    ){
+    ) {
         Checkbox(
             checked = checked,
             onCheckedChange = onCheckedChange

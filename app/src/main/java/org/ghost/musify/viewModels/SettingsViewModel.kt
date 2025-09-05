@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.ghost.musify.AppSettings
+import org.ghost.musify.data.AppSettings
 import org.ghost.musify.enums.AudioFocus
 import org.ghost.musify.enums.HeadsetPlugAction
 import org.ghost.musify.enums.NotificationStyle

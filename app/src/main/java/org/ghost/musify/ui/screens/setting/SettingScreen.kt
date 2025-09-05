@@ -16,8 +16,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import org.ghost.musify.ui.components.SettingsCategoryItem
 import org.ghost.musify.ui.navigation.SettingScreen
@@ -28,6 +26,7 @@ data class SettingCategory(
     val icon: ImageVector,
     val route: SettingScreen // The navigation route for the detail screen
 )
+
 // master screen where main setting will display
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,11 +36,36 @@ fun SettingsScreen(
 //    navController: NavController
 ) {
     val categories = listOf(
-        SettingCategory("General", "Theme, color, language", Icons.Default.Home, SettingScreen.GeneralSettings),
-        SettingCategory("Audio & Playback", "Equalizer, crossfade, focus", Icons.Default.Build, SettingScreen.AudioSettings),
-        SettingCategory("Library & Metadata", "Folders, scanning, album art", Icons.Default.Info, SettingScreen.LibrarySettings),
-        SettingCategory("Notifications & Widgets", "Appearance and behavior", Icons.Default.Notifications, SettingScreen.NotificationsSettings),
-        SettingCategory("Advanced", "Exclusions, backup & restore", Icons.Default.Settings, SettingScreen.AdvancedSettings)
+        SettingCategory(
+            "General",
+            "Theme, color, language",
+            Icons.Default.Home,
+            SettingScreen.GeneralSettings
+        ),
+        SettingCategory(
+            "Audio & Playback",
+            "Equalizer, crossfade, focus",
+            Icons.Default.Build,
+            SettingScreen.AudioSettings
+        ),
+        SettingCategory(
+            "Library & Metadata",
+            "Folders, scanning, album art",
+            Icons.Default.Info,
+            SettingScreen.LibrarySettings
+        ),
+        SettingCategory(
+            "Notifications & Widgets",
+            "Appearance and behavior",
+            Icons.Default.Notifications,
+            SettingScreen.NotificationsSettings
+        ),
+        SettingCategory(
+            "Advanced",
+            "Exclusions, backup & restore",
+            Icons.Default.Settings,
+            SettingScreen.AdvancedSettings
+        )
     )
 
     Scaffold(

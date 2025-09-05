@@ -11,6 +11,9 @@ composeBom = "2025.08.01"
 constraintlayout-compose = "1.1.1"
 serialization-json = "1.9.0"
 
+#splash screen
+splashscreen = "1.0.1"
+
 #color
 materialKolor = "3.0.1"
 
@@ -54,6 +57,9 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 #androidx_material_icons-core = { module = "androidx.compose.material:material-icons-core" }
+
+#splash screen
+androidx-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 
 #guava
 guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }

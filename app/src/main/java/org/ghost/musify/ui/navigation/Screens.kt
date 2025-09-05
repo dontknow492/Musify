@@ -43,16 +43,19 @@ sealed interface NavScreen {
 }
 
 
-
 interface SettingScreen : NavScreen {
     @Serializable
-    object GeneralSettings: SettingScreen
+    object GeneralSettings : SettingScreen
+
     @Serializable
-    object AudioSettings: SettingScreen
+    object AudioSettings : SettingScreen
+
     @Serializable
-    object LibrarySettings: SettingScreen
+    object LibrarySettings : SettingScreen
+
     @Serializable
-    object NotificationsSettings: SettingScreen
+    object NotificationsSettings : SettingScreen
+
     @Serializable
-    object AdvancedSettings: SettingScreen
+    object AdvancedSettings : SettingScreen
 }
