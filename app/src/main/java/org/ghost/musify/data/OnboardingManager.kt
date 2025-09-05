@@ -6,13 +6,15 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
 // Create the DataStore instance
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class OnboardingManager(private val context: Context) {
+class OnboardingManager @Inject constructor( @param: ApplicationContext private val context: Context) {
 
     // Define a key for our boolean flag
     companion object {

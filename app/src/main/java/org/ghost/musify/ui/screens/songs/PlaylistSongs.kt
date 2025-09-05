@@ -12,11 +12,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import org.ghost.musify.ui.components.PlayerBottomAppBar
 import org.ghost.musify.ui.components.SongGroupWindow
 import org.ghost.musify.ui.models.SongFilter
 import org.ghost.musify.ui.models.SongWindowData
 import org.ghost.musify.ui.models.SongsCategory
 import org.ghost.musify.utils.DynamicThemeFromImage
+import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.songs.PlaylistSongsViewModel
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -24,6 +26,7 @@ import org.ghost.musify.viewModels.songs.PlaylistSongsViewModel
 fun PlaylistSongs(
     modifier: Modifier = Modifier,
     viewModel: PlaylistSongsViewModel = hiltViewModel(),
+    playerViewModel: PlayerViewModel,
     onSongClick: (Long, SongFilter, Boolean, Int) -> Unit,
     onMenuClick: (Long) -> Unit,
     onBackClick: () -> Unit
@@ -58,6 +61,12 @@ fun PlaylistSongs(
         SongGroupWindow(
             modifier = Modifier,
             data = playlistData,
+            bottomAppBar = {
+                PlayerBottomAppBar(
+                    playerViewModel = playerViewModel,
+                    onClick = {}
+                )
+            },
             onPlayClick = {
                 if (uiState.playlist == null) return@SongGroupWindow
                 onSongClick(

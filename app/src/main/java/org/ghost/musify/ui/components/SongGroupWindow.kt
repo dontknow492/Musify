@@ -50,6 +50,7 @@ import org.ghost.musify.ui.models.SongWindowData
 fun SongGroupWindow(
     modifier: Modifier = Modifier,
     data: SongWindowData,
+    bottomAppBar: @Composable () -> Unit = {},
     onPlayClick: () -> Unit,
     onCardClick: (Long) -> Unit,
     onMenuClick: (Long) -> Unit,
@@ -76,7 +77,8 @@ fun SongGroupWindow(
                     modifier = Modifier.size(34.dp)
                 )
             }
-        }
+        },
+        bottomBar = bottomAppBar,
     ) { innerPadding ->
         Column(
             modifier = Modifier

@@ -43,13 +43,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.launch
 import org.ghost.musify.R
+import org.ghost.musify.ui.components.MyBottomAppBar
 import org.ghost.musify.ui.components.SongsLazyColumn
 import org.ghost.musify.ui.models.SongFilter
 import org.ghost.musify.ui.models.SongsCategory
 import org.ghost.musify.ui.models.Tab
+import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.ui.screens.tabWindow.AlbumScreen
 import org.ghost.musify.ui.screens.tabWindow.ArtistScreen
 import org.ghost.musify.ui.screens.tabWindow.PlaylistScreen
+import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.home.MusicViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,12 +61,15 @@ import org.ghost.musify.viewModels.home.MusicViewModel
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: MusicViewModel,
+    playerViewModel: PlayerViewModel,
     onCardClick: (Long, SongFilter) -> Unit = { _, _ -> },
     onMenuClick: (Long) -> Unit = {},
     onAlbumClick: (Long) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
     onPlaylistClick: (Long) -> Unit = {},
-    onSearchClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    onNavigationItemClick: (NavScreen) -> Unit,
+    onBottomPlayerClick: () -> Unit,
 ) {
     val pageState = rememberPagerState(initialPage = 0) { 5 }
     val tabs = listOf(
@@ -89,10 +95,8 @@ fun HomeScreen(
         )
     )
     val scope = rememberCoroutineScope()
-    var search by rememberSaveable { mutableStateOf("") }
 
     var isBottomSheetVisible by remember { mutableStateOf(false) }
-    val onSearchChange: (String) -> Unit = { search = it }
 
 
     val allSongs = viewModel.music.collectAsLazyPagingItems()
@@ -107,12 +111,17 @@ fun HomeScreen(
                 onFilterClick = { isBottomSheetVisible = true },
                 onSearchClick = onSearchClick
             )
+        },
+        bottomBar = {
+            MyBottomAppBar(
+                playerViewModel = playerViewModel,
+                currentScreen = NavScreen.Main.Home,
+                onPlayerClick = onBottomPlayerClick,
+                onNavigationItemClick = onNavigationItemClick
+            )
         }
     ) { innerPadding ->
-        val modifier = Modifier.padding(
-            top = innerPadding.calculateTopPadding(),
-            bottom = innerPadding.calculateBottomPadding()
-        )
+        val modifier = Modifier.padding(innerPadding)
         PullToRefreshBox(
             isRefreshing = false,
             onRefresh = {},

@@ -15,11 +15,13 @@ import coil3.request.crossfade
 import coil3.request.error
 import coil3.request.placeholder
 import org.ghost.musify.R
+import org.ghost.musify.ui.components.PlayerBottomAppBar
 import org.ghost.musify.ui.components.SongGroupWindow
 import org.ghost.musify.ui.models.SongFilter
 import org.ghost.musify.ui.models.SongWindowData
 import org.ghost.musify.ui.models.SongsCategory
 import org.ghost.musify.utils.DynamicThemeFromImage
+import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.songs.ArtistSongsViewModel
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -27,6 +29,7 @@ import org.ghost.musify.viewModels.songs.ArtistSongsViewModel
 fun ArtistSongs(
     modifier: Modifier = Modifier,
     viewModel: ArtistSongsViewModel = hiltViewModel(),
+    playerViewModel: PlayerViewModel,
     onSongClick: (Long, SongFilter, Boolean, Int) -> Unit,
     onMenuClick: (Long) -> Unit,
     onBackClick: () -> Unit
@@ -58,6 +61,12 @@ fun ArtistSongs(
         SongGroupWindow(
             modifier = Modifier,
             data = artistData,
+            bottomAppBar = {
+                PlayerBottomAppBar(
+                    playerViewModel = playerViewModel,
+                    onClick = {}
+                )
+            },
             onPlayClick = {
                 if (uiState.artist == null) return@SongGroupWindow
                 onSongClick(

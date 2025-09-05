@@ -29,13 +29,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import org.ghost.musify.viewModels.AddToPlaylistViewModel
 
 @Composable
 fun AddToPlaylistDialog(
     modifier: Modifier = Modifier,
-    viewModel: AddToPlaylistViewModel,
+    viewModel: AddToPlaylistViewModel = hiltViewModel(),
     onDismissRequest: () -> Unit,
 ) {
     val title = "Add to playlist"

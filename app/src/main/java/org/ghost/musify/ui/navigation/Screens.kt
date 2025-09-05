@@ -5,57 +5,66 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface NavScreen {
 
+    // Group 1: Screens shown before the main app is visible
     @Serializable
-    object Home : NavScreen
+    sealed interface Launch : NavScreen {
+        @Serializable
+        data object Splash : Launch
+        @Serializable
+        data object Onboarding : Launch
+    }
 
+    // Group 2: The main screens of the app, likely in a BottomNavBar
     @Serializable
-    object Search : NavScreen
+    sealed interface Main : NavScreen {
+        @Serializable
+        data object Home : Main
+        @Serializable
+        data object Search : Main
+        @Serializable
+        data object History : Main
+    }
 
+    // Group 3: Screens for displaying lists of songs
     @Serializable
-    object History : NavScreen
+    sealed interface Songs : NavScreen {
+        @Serializable
+        data class Album(val albumId: Long) : Songs
+        @Serializable
+        data class Artist(val artistName: String) : Songs
+        @Serializable
+        data class Playlist(val playlistId: Long) : Songs
+    }
 
+    // Group 4: The full-screen media player
     @Serializable
-    object Setting : NavScreen
+    data class Player(val songId: Long? = null) : NavScreen
 
+    // Group 5: Dialogs that can be shown over other screens
     @Serializable
-    data class AlbumSongs(
-        val albumId: Long
-    ) : NavScreen
+    sealed interface Dialogs : NavScreen {
+        @Serializable
+        data class SongMenu(val songId: Long) : Dialogs
+        @Serializable
+        data class AddToPlaylist(val songId: Long) : Dialogs
+    }
 
+    // Group 6: The settings section, which can have its own nested navigation
     @Serializable
-    data class ArtistSongs(
-        val artistName: String
-    ) : NavScreen
-
-    @Serializable
-    data class PlaylistSongs(
-        val playlistId: Long
-    ) : NavScreen
-
-    @Serializable
-    data class PlayerScreen(val songId: Long? = null) : NavScreen
-
-    @Serializable
-    data class SongMenu(val songId: Long) : NavScreen
-
-    @Serializable
-    data class AddToPlaylist(val songId: Long) : NavScreen
+    sealed interface Settings : NavScreen {
+        @Serializable
+        data object Main : Settings // The main settings screen
+        @Serializable
+        data object General : Settings
+        @Serializable
+        data object Audio : Settings
+        @Serializable
+        data object Library : Settings
+        @Serializable
+        data object Notifications : Settings
+        @Serializable
+        data object Advanced : Settings
+    }
 }
 
 
-interface SettingScreen : NavScreen {
-    @Serializable
-    object GeneralSettings : SettingScreen
-
-    @Serializable
-    object AudioSettings : SettingScreen
-
-    @Serializable
-    object LibrarySettings : SettingScreen
-
-    @Serializable
-    object NotificationsSettings : SettingScreen
-
-    @Serializable
-    object AdvancedSettings : SettingScreen
-}

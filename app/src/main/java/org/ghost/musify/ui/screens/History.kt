@@ -61,10 +61,13 @@ import coil3.request.error
 import coil3.request.placeholder
 import org.ghost.musify.R
 import org.ghost.musify.entity.relation.HistoryWithSongDetails
+import org.ghost.musify.ui.components.MyBottomAppBar
+import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.utils.cacheEmbeddedArts
 import org.ghost.musify.utils.getSongUri
 import org.ghost.musify.utils.toFormattedDuration
 import org.ghost.musify.viewModels.HistoryViewModel
+import org.ghost.musify.viewModels.PlayerViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -77,7 +80,10 @@ import java.time.format.FormatStyle
 fun HistoryScreen(
     modifier: Modifier = Modifier,
     viewModel: HistoryViewModel = hiltViewModel(),
-    onSongClick: (Long) -> Unit
+    playerViewModel: PlayerViewModel,
+    onSongClick: (Long) -> Unit,
+    onNavigationItemClick: (NavScreen) -> Unit,
+    onBottomPlayerClick: () -> Unit,
 ) {
     val MILLIS_IN_A_DAY = 86_400_000L
     val historyItems = viewModel.playbackHistory.collectAsLazyPagingItems()
@@ -86,6 +92,7 @@ fun HistoryScreen(
 
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(text = "Playback History") },
@@ -115,6 +122,14 @@ fun HistoryScreen(
                 }
 
             )
+        },
+        bottomBar = {
+            MyBottomAppBar(
+                playerViewModel = playerViewModel,
+                currentScreen = NavScreen.Main.History,
+                onPlayerClick = onBottomPlayerClick,
+                onNavigationItemClick = onNavigationItemClick
+            )
         }
     ) { innerPadding ->
         PullToRefreshBox(
@@ -122,7 +137,7 @@ fun HistoryScreen(
             onRefresh = {},
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = innerPadding.calculateTopPadding())
+                .padding(paddingValues = innerPadding)
         ) {
             Box(
                 modifier = modifier

@@ -17,14 +17,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavHostController
+import org.ghost.musify.ui.components.MyBottomAppBar
 import org.ghost.musify.ui.components.SettingsCategoryItem
-import org.ghost.musify.ui.navigation.SettingScreen
+import org.ghost.musify.ui.navigation.NavScreen
+import org.ghost.musify.viewModels.PlayerViewModel
+
+//import org.ghost.musify.ui.navigation.NavScreen.Settings
 
 data class SettingCategory(
     val title: String,
     val subtitle: String,
     val icon: ImageVector,
-    val route: SettingScreen // The navigation route for the detail screen
+    val route: NavScreen.Settings // The navigation route for the detail screen
 )
 
 // master screen where main setting will display
@@ -32,7 +36,10 @@ data class SettingCategory(
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    navController: NavHostController
+    navController: NavHostController,
+    playerViewModel: PlayerViewModel,
+    onNavigationItemClick: (NavScreen) -> Unit,
+    onBottomPlayerClick: () -> Unit,
 //    navController: NavController
 ) {
     val categories = listOf(
@@ -40,31 +47,31 @@ fun SettingsScreen(
             "General",
             "Theme, color, language",
             Icons.Default.Home,
-            SettingScreen.GeneralSettings
+            NavScreen.Settings.General
         ),
         SettingCategory(
             "Audio & Playback",
             "Equalizer, crossfade, focus",
             Icons.Default.Build,
-            SettingScreen.AudioSettings
+            NavScreen.Settings.Audio
         ),
         SettingCategory(
             "Library & Metadata",
             "Folders, scanning, album art",
             Icons.Default.Info,
-            SettingScreen.LibrarySettings
+            NavScreen.Settings.Library
         ),
         SettingCategory(
             "Notifications & Widgets",
             "Appearance and behavior",
             Icons.Default.Notifications,
-            SettingScreen.NotificationsSettings
+            NavScreen.Settings.Notifications
         ),
         SettingCategory(
             "Advanced",
             "Exclusions, backup & restore",
             Icons.Default.Settings,
-            SettingScreen.AdvancedSettings
+            NavScreen.Settings.Advanced
         )
     )
 
@@ -72,6 +79,14 @@ fun SettingsScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(title = { Text("Settings") })
+        },
+        bottomBar = {
+            MyBottomAppBar(
+                playerViewModel = playerViewModel,
+                currentScreen = NavScreen.Settings.Main,
+                onPlayerClick = onBottomPlayerClick,
+                onNavigationItemClick = onNavigationItemClick
+            )
         }
     ) { paddingValues ->
         LazyColumn(modifier = Modifier.padding(paddingValues)) {

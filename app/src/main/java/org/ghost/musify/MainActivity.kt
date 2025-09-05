@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -28,10 +30,15 @@ import dagger.hilt.android.AndroidEntryPoint
 import org.ghost.musify.ui.navigation.AppNavigation
 import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.ui.theme.MusifyTheme
+import org.ghost.musify.viewModels.MainUiState
+import org.ghost.musify.viewModels.MainViewModel
+import org.ghost.musify.viewModels.PlayerViewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     lateinit var navController: NavHostController
+    private val mainViewModel: MainViewModel by viewModels()
+    private val playerViewModel: PlayerViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +46,7 @@ class MainActivity : ComponentActivity() {
 
         installSplashScreen().apply{
             setKeepOnScreenCondition{
-                false
+                mainViewModel.uiState.value == MainUiState.Loading
             }
         }
         enableEdgeToEdge()
@@ -49,11 +56,13 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = false
             ) {
 //                val start = NavScreen.AlbumSongs(1312244804222984308L)
-                val start = NavScreen.Home
+                val start = NavScreen.Main.Home
                 RequestAudioPermission {
                     AppNavigation(
                         navController = navController,
-                        startDestination = start
+                        startDestination = start,
+                        viewModel = mainViewModel,
+                        playerViewModel = playerViewModel
                     )
                 }
             }

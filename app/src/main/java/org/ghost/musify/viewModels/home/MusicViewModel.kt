@@ -30,7 +30,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MusicViewModel @Inject constructor(
     private val repository: MusicRepository,
-    @ApplicationContext private val context: Context,
+    @param: ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     val availableSortBy = listOf(
@@ -47,10 +47,6 @@ class MusicViewModel @Inject constructor(
     val favoriteSongs = repository.getFavoriteSongs().cachedIn(viewModelScope)
 
     // --- State for the UI ---
-    init {
-        viewModelScope.launch {
-            repository.syncMediaStore()
-        }
-    }
+
 
 }

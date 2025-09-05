@@ -30,6 +30,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +52,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.ui.components.CoverChangeableItem
+import org.ghost.musify.ui.components.MyBottomAppBar
 import org.ghost.musify.ui.components.SongItem
+import org.ghost.musify.ui.navigation.NavScreen
+import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.SearchUiState
 import org.ghost.musify.viewModels.SearchViewModel
 
@@ -60,11 +64,14 @@ import org.ghost.musify.viewModels.SearchViewModel
 fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
+    playerViewModel: PlayerViewModel,
     onSongClick: (Long, List<SongWithAlbumAndArtist>) -> Unit = { _, _ -> },
     onMenuClick: (Long) -> Unit,
     onAlbumClick: (Long) -> Unit,
     onArtistClick: (String) -> Unit,
     onPlaylistClick: (Long) -> Unit,
+    onNavigationItemClick: (NavScreen) -> Unit,
+    onBottomPlayerClick: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -75,36 +82,47 @@ fun SearchScreen(
         focusRequester.requestFocus()
     }
 
-    Column(modifier = modifier) {
-        SearchBar(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(WindowInsets.statusBars.asPaddingValues())
-                .focusRequester(focusRequester),
-            query = uiState.searchQuery,
-            // FIX 1: Correctly wire up the ViewModel events
-            onSearch = viewModel::onSearchTriggered,
-            onQueryChange = viewModel::onSearchQueryChanged,
-            searchResults = uiState.searchHistory,
-        )
-
-        // Only show results if not loading
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            SearchResultsContent(
-                uiState,
-                onSongClick = onSongClick,
-                onMenuClick = onMenuClick,
-                onAlbumClick = onAlbumClick,
-                onArtistClick = onArtistClick,
-                onPlaylistClick = onPlaylistClick
+    Scaffold(
+        modifier = modifier,
+        bottomBar = {
+            MyBottomAppBar(
+                playerViewModel = playerViewModel,
+                currentScreen = NavScreen.Main.Search,
+                onPlayerClick = onBottomPlayerClick,
+                onNavigationItemClick = onNavigationItemClick
             )
+        }
+    ) { innerPadding ->
+        Column(modifier = Modifier.padding(innerPadding)) {
+            SearchBar(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                query = uiState.searchQuery,
+                // FIX 1: Correctly wire up the ViewModel events
+                onSearch = viewModel::onSearchTriggered,
+                onQueryChange = viewModel::onSearchQueryChanged,
+                searchResults = uiState.searchHistory,
+            )
+
+            // Only show results if not loading
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                SearchResultsContent(
+                    uiState,
+                    onSongClick = onSongClick,
+                    onMenuClick = onMenuClick,
+                    onAlbumClick = onAlbumClick,
+                    onArtistClick = onArtistClick,
+                    onPlaylistClick = onPlaylistClick
+                )
+            }
         }
     }
 }

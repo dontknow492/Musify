@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +34,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -61,6 +64,8 @@ import org.ghost.musify.ui.screens.songs.ArtistSongs
 import org.ghost.musify.ui.screens.songs.PlaylistSongs
 import org.ghost.musify.viewModels.AddToPlaylistViewModel
 import org.ghost.musify.viewModels.HistoryViewModel
+import org.ghost.musify.viewModels.MainUiState
+import org.ghost.musify.viewModels.MainViewModel
 import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.SearchViewModel
 import org.ghost.musify.viewModels.SongViewModel
@@ -74,367 +79,300 @@ const val TAG = "NavigationHandler"
 fun AppNavigation(
     modifier: Modifier = Modifier,
     navController: NavHostController,
-    startDestination: NavScreen = NavScreen.Home
+    startDestination: NavScreen = NavScreen.Main.Home,
+    viewModel: MainViewModel,
+    playerViewModel: PlayerViewModel
 ) {
-    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
 
-    val coroutineScope = rememberCoroutineScope()
+    var hasNavigatedFromSplash by rememberSaveable { mutableStateOf(false) }
 
-    // Instantiate your manager
-    val onboardingManager = remember { OnboardingManager(context) }
-
-    // Collect the Flow as state. `initialValue = false` assumes onboarding is not complete
-    // until DataStore confirms otherwise.
-    val isOnboardingCompleted by onboardingManager.isOnboardingCompleted.collectAsState(initial = false)
-
-    // Based on the flag, decide which screen to show
-    if (isOnboardingCompleted) {
-        // If onboarding is complete, show your main app screen
-        MainAppScreen(
-            modifier = modifier,
-            navController = navController,
-            startDestination = startDestination
-        ) // Replace with your actual main app composable
-    } else {
-        // If onboarding is not complete, show the onboarding flow
-        OnboardingScreen(
-            onOnboardingComplete = {
-                // When onboarding finishes, launch a coroutine to update the flag
-                coroutineScope.launch {
-                    onboardingManager.setOnboardingCompleted()
+    // This effect handles the one-time navigation away from the splash screen.
+    LaunchedEffect(uiState, hasNavigatedFromSplash) {
+        Log.d(TAG, "AppNavigation: Checking navigation state $uiState, $hasNavigatedFromSplash")
+        if (!hasNavigatedFromSplash) {
+            when (uiState) {
+                MainUiState.NavigateToOnboarding -> {
+                    navController.navigate(NavScreen.Launch.Onboarding) {
+                        popUpTo(NavScreen.Launch.Splash) { inclusive = true }
+                    }
+                    hasNavigatedFromSplash = true // Mark that navigation has occurred.
                 }
+                MainUiState.NavigateToMainApp -> {
+                    navController.navigate(startDestination) {
+                        popUpTo(NavScreen.Launch.Splash) { inclusive = true }
+                    }
+                    hasNavigatedFromSplash = true // Mark that navigation has occurred.
+                }
+                MainUiState.Loading -> { /* Do nothing, waiting for view model. */ }
             }
-        )
+        }
     }
 
-}
-
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@RequiresApi(Build.VERSION_CODES.Q)
-@Composable
-fun MainAppScreen(
-    modifier: Modifier = Modifier,
-    navController: NavHostController,
-    startDestination: NavScreen = NavScreen.Home
-) {
-
-    var currentScreen by remember { mutableStateOf(startDestination) }
-    var previousScreen by remember { mutableStateOf<NavScreen?>(null) }
     var searchViewModel: SearchViewModel = hiltViewModel()
-    val playerViewModel: PlayerViewModel = hiltViewModel()
     val musicViewModel: MusicViewModel = hiltViewModel()
     val historyViewModel: HistoryViewModel = hiltViewModel()
 
-    val currentPlay by playerViewModel.uiState.collectAsState()
+
 
     val playSong: (Long, SongFilter) -> Unit = { songId, filter ->
         Log.d(TAG, "playSong: Playing song with ID $songId from filter: $filter")
         playerViewModel.playSongFromFilter(songId, filter)
-        navController.navigate(NavScreen.PlayerScreen(songId))
+        navController.navigate(NavScreen.Player(songId))
     }
     val playSongExtra: (Long, SongFilter, Boolean, Int) -> Unit =
         { songId, filter, shuffle, repeatMode ->
             Log.d(TAG, "playSong: Playing song with ID $songId from filter: $filter")
             playerViewModel.playSongFromFilter(songId, filter, shuffle, repeatMode)
-            navController.navigate(NavScreen.PlayerScreen(songId))
+            navController.navigate(NavScreen.Player(songId))
         }
 
 
     val playSongList: (Long, List<SongWithAlbumAndArtist>) -> Unit = { songId, songs ->
         Log.d(TAG, "playSongList: Playing song list with ID $songId from songs: $songs")
         playerViewModel.playSongFromList(songId, songs)
-        navController.navigate(NavScreen.PlayerScreen(songId))
+        navController.navigate(NavScreen.Player(songId))
     }
 
     val onMenuClick: (Long) -> Unit = { songId ->
         Log.d(TAG, "onMenuClick: Opening song menu for song ID $songId")
-        navController.navigate(NavScreen.SongMenu(songId))
+        navController.navigate(NavScreen.Dialogs.SongMenu(songId))
     }
 
     val onAddToPlaylist: (Long) -> Unit = { songId ->
         Log.d(TAG, "onAddToPlaylist: Navigating to add song ID $songId to a playlist")
         navController.navigate(
-            NavScreen.AddToPlaylist(songId)
+            NavScreen.Dialogs.AddToPlaylist(songId)
         )
     }
 
     val onAlbumClick: (Long) -> Unit = { albumId ->
         Log.d(TAG, "onAlbumClick: Navigating to album with ID $albumId")
-        navController.navigate(NavScreen.AlbumSongs(albumId))
+        navController.navigate(NavScreen.Songs.Album(albumId))
     }
     val onArtistClick: (String) -> Unit = { artistName ->
         Log.d(TAG, "onArtistClick: Navigating to artist: $artistName")
-        navController.navigate(NavScreen.ArtistSongs(artistName))
+        navController.navigate(NavScreen.Songs.Artist(artistName))
     }
     val onPlaylistClick: (Long) -> Unit = { playlistId ->
         Log.d(TAG, "onPlaylistClick: Navigating to playlist with ID $playlistId")
-        navController.navigate(NavScreen.PlaylistSongs(playlistId))
+        navController.navigate(NavScreen.Songs.Playlist(playlistId))
     }
 
     val onBackClick: () -> Unit = {
         Log.d(
             TAG,
-            "onBackClick: Popping back stack. Current screen: $currentScreen, Previous: $previousScreen"
+            "onBackClick: Popping back stack"
         )
         navController.popBackStack()
-        currentScreen = previousScreen ?: NavScreen.Home
     }
 
     SharedTransitionLayout(
         modifier = modifier
     ) {
-        Scaffold(
-            bottomBar = {
-                val show = when (currentScreen) {
-                    is NavScreen.Home -> true
-                    is NavScreen.Search -> true
-                    is NavScreen.History -> true
-                    is NavScreen.Setting -> true
-                    is NavScreen.AlbumSongs -> false
-                    is NavScreen.ArtistSongs -> false
-                    is NavScreen.PlaylistSongs -> false
-                    is NavScreen.PlayerScreen -> false
-                    else -> true
-                }
-                AnimatedVisibility(true) {
-                    val bottomModifier = if (show) Modifier else Modifier
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .windowInsetsPadding(WindowInsets.navigationBars)
-                    Column(
-                        modifier = bottomModifier
-//                            .windowInsetsPadding(WindowInsets.navigationBars)
-                    ) {
-                        AnimatedVisibility(currentPlay.currentSong != null && currentScreen !is NavScreen.PlayerScreen) {
-                            BottomPlayer(
-                                modifier = modifier.clip(
-                                    RoundedCornerShape(
-                                        topStart = 8.dp,
-                                        topEnd = 8.dp
-                                    )
-                                ),
-                                playerUiState = currentPlay,
-                                onClick = {
-                                    navController.navigate(
-                                        NavScreen.PlayerScreen(
-                                            currentPlay.currentSong?.song?.id ?: 0L
-                                        )
-                                    )
-                                },
-                                onPlayPauseClick = {
-                                    playerViewModel.onPlayPauseClicked()
-                                },
-                                onCloseCLick = {}
-                            )
-                        }
-                        if (show) {
-                            HorizontalDivider()
-                        }
-                        AnimatedVisibility(show) {
 
-                            AppNavigationBar(
-                                currentRoute = currentScreen,
-                                onClick = { navController.navigate(it) }
-                            )
-                        }
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+        ) {
+            composable<NavScreen.Launch.Splash> {}
 
-
+            composable<NavScreen.Launch.Onboarding>{
+                OnboardingScreen(onOnboardingComplete = {
+                    navController.navigate(startDestination) {
+                        popUpTo(NavScreen.Launch.Onboarding) { inclusive = true }
                     }
-                }
-
+                })
             }
-        ) { innerPadding ->
-            Box {
-                NavHost(
-                    navController = navController,
-                    startDestination = startDestination,
-                    modifier = Modifier.padding(
-                        bottom = max(
-                            0.dp,
-                            innerPadding.calculateBottomPadding() - WindowInsets.navigationBars.asPaddingValues()
-                                .calculateBottomPadding()
-                        ),
-                        start = innerPadding.calculateLeftPadding(LocalLayoutDirection.current),
-                        end = innerPadding.calculateRightPadding(LocalLayoutDirection.current)
-                    )
-                ) {
-                    composable<NavScreen.Home> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = NavScreen.Home
-                        }
 
-                        HomeScreen(
-                            viewModel = musicViewModel,
-                            onCardClick = playSong,
-                            onMenuClick = onMenuClick,
-                            onAlbumClick = onAlbumClick,
-                            onArtistClick = onArtistClick,
-                            onPlaylistClick = onPlaylistClick,
-                            onSearchClick = { navController.navigate(NavScreen.Search) }
-                        )
-                    }
-                    composable<NavScreen.Search> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = NavScreen.Search
-                        }
-                        SearchScreen(
-                            viewModel = searchViewModel,
-                            onSongClick = playSongList,
-                            onMenuClick = onMenuClick,
-                            onAlbumClick = onAlbumClick,
-                            onArtistClick = onArtistClick,
-                            onPlaylistClick = onPlaylistClick,
-                        )
-//                    currentScreen = NavScreen.Search
-                    }
-                    composable<NavScreen.History> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = NavScreen.History
-                        }
-                        HistoryScreen(viewModel = historyViewModel, onSongClick = {})
-                    }
-                    composable<NavScreen.Setting> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = NavScreen.Setting
-                        }
-                        SettingsScreen(
-                            modifier = modifier,
-                            navController = navController
-                        )
-                    }
-                    composable<NavScreen.AlbumSongs> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen =
-                                NavScreen.AlbumSongs(it.arguments?.getLong("albumId") ?: 0L)
-                        }
-                        AlbumSongs(
-                            onSongClick = playSongExtra,
-                            onBackClick = onBackClick,
-                            onMenuClick = onMenuClick
-                        )
-                    }
-                    composable<NavScreen.ArtistSongs> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen =
-                                NavScreen.ArtistSongs(it.arguments?.getString("artistName") ?: "")
-                        }
-                        ArtistSongs(
-                            onSongClick = playSongExtra,
-                            onBackClick = onBackClick,
-                            onMenuClick = onMenuClick
-                        )
-                    }
-                    composable<NavScreen.PlaylistSongs> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen =
-                                NavScreen.PlaylistSongs(it.arguments?.getLong("playlistId") ?: 0L)
-                        }
-                        PlaylistSongs(
-                            onSongClick = playSongExtra,
-                            onBackClick = onBackClick,
-                            onMenuClick = onMenuClick
-                        )
-                    }
-                    composable<NavScreen.PlayerScreen> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = NavScreen.PlayerScreen()
-                        }
-//    )
-                        PlayerWindow(
-                            viewModel = playerViewModel,
-                            onBackClick = onBackClick,
-                            onAddToPlaylistClick = onAddToPlaylist
-                        )
+            mainScreenNavigation(
+                navController = navController,
+                modifier = modifier,
+                playerViewModel = playerViewModel,
+                musicViewModel = musicViewModel,
+                searchViewModel = searchViewModel,
+                historyViewModel = historyViewModel,
+                playSong = playSong,
+                playSongList = playSongList,
+                onMenuClick = onMenuClick,
+                onAlbumClick = onAlbumClick,
+                onArtistClick = onArtistClick,
+                onPlaylistClick = onPlaylistClick,
+            )
+
+            songsNavigation(
+                playerViewModel = playerViewModel,
+                onMenuClick = onMenuClick,
+                onBackClick = onBackClick,
+                playSongExtra = playSongExtra
+            )
+
+            composable<NavScreen.Player> {
+                PlayerWindow(
+                    viewModel = playerViewModel,
+                    onBackClick = onBackClick,
+                    onAddToPlaylistClick = onAddToPlaylist
+                )
 //                        PlayerScreen()
-                    }
-                    dialog<NavScreen.SongMenu> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen =
-                                NavScreen.SongMenu(it.arguments?.getLong("songId") ?: 0L)
-                        }
-                        val songViewModel: SongViewModel = hiltViewModel()
-//    )
-                        SongMenu(
-                            viewModel = songViewModel,
-                            onDismissRequest = {
-                                // To "just back", you simply pop the back stack.
-                                navController.popBackStack()
-                            },
-                            onAddToPlaylist = onAddToPlaylist
-
-                        )
-//                        PlayerScreen()
-                    }
-                    dialog<NavScreen.AddToPlaylist> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen =
-                                NavScreen.AddToPlaylist(it.arguments?.getLong("songId") ?: 0L)
-                        }
-                        val addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel()
-                        AddToPlaylistDialog(
-                            viewModel = addToPlaylistViewModel,
-                            onDismissRequest = {
-                                // To "just back", you simply pop the back stack.
-                                onBackClick()
-                            },
-
-                            )
-                    }
-
-                    // setting
-
-
-                    composable<SettingScreen.GeneralSettings> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = SettingScreen.GeneralSettings
-                        }
-                        GeneralSettingScreen()
-                    }
-                    composable<SettingScreen.AudioSettings> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = SettingScreen.AudioSettings
-                        }
-                        AudioSettingScreen()
-                    }
-                    composable<SettingScreen.NotificationsSettings> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = SettingScreen.NotificationsSettings
-                        }
-                        NotificationSettingScreen()
-                    }
-                    composable<SettingScreen.AdvancedSettings> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = SettingScreen.AdvancedSettings
-                        }
-                        AdvanceSettingScreen()
-                    }
-                    composable<SettingScreen.LibrarySettings> {
-                        LaunchedEffect(Unit) {
-                            previousScreen = currentScreen
-                            currentScreen = SettingScreen.LibrarySettings
-                        }
-                        LibrarySettingScreen()
-                    }
-                }
             }
+
+            dialog<NavScreen.Dialogs.SongMenu> {
+                SongMenu(
+                    onDismissRequest = {
+                        // To "just back", you simply pop the back stack.
+                        navController.popBackStack()
+                    },
+                    onAddToPlaylist = onAddToPlaylist
+
+                )
+//                        PlayerScreen()
+            }
+            dialog<NavScreen.Dialogs.AddToPlaylist> {
+                AddToPlaylistDialog(
+                    onDismissRequest = {
+                        // To "just back", you simply pop the back stack.
+                        onBackClick()
+                    },
+                )
+            }
+
+            // setting
+            settingNavigation()
+
 
         }
+
     }
 
 }
+
+
+@RequiresApi(Build.VERSION_CODES.Q)
+private fun NavGraphBuilder.mainScreenNavigation(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+    playerViewModel: PlayerViewModel,
+    musicViewModel: MusicViewModel,
+    searchViewModel: SearchViewModel,
+    historyViewModel: HistoryViewModel,
+    playSong: (Long, SongFilter) -> Unit = { _, _ -> },
+    playSongList: (Long, List<SongWithAlbumAndArtist>) -> Unit = { _, _ -> },
+    onMenuClick: (Long) -> Unit = {},
+    onAlbumClick: (Long) -> Unit = {},
+    onArtistClick: (String) -> Unit = {},
+    onPlaylistClick: (Long) -> Unit = {},
+){
+    val onNavigationItemClick = { screen: NavScreen ->
+        navController.navigate(screen)
+    }
+
+    val onBottomPlayerClick = {
+        navController.navigate(NavScreen.Player())
+    }
+
+    composable<NavScreen.Main.Home> {
+
+        HomeScreen(
+            viewModel = musicViewModel,
+            playerViewModel = playerViewModel,
+            onCardClick = playSong,
+            onMenuClick = onMenuClick,
+            onAlbumClick = onAlbumClick,
+            onArtistClick = onArtistClick,
+            onPlaylistClick = onPlaylistClick,
+            onSearchClick = { navController.navigate(NavScreen.Main.Search) },
+            onNavigationItemClick = onNavigationItemClick,
+            onBottomPlayerClick = onBottomPlayerClick,
+        )
+    }
+    composable<NavScreen.Main.Search> {
+        SearchScreen(
+            viewModel = searchViewModel,
+            playerViewModel = playerViewModel,
+            onSongClick = playSongList,
+            onMenuClick = onMenuClick,
+            onAlbumClick = onAlbumClick,
+            onArtistClick = onArtistClick,
+            onPlaylistClick = onPlaylistClick,
+            onNavigationItemClick = onNavigationItemClick,
+            onBottomPlayerClick = onBottomPlayerClick,
+        )
+//                    currentScreen = _root_ide_package_.org.ghost.musify.ui.navigation.NavScreen.Main.Search
+    }
+
+    composable<NavScreen.Main.History> {
+        HistoryScreen(
+            viewModel = historyViewModel,
+            playerViewModel = playerViewModel,
+            onSongClick = {},
+            onNavigationItemClick = onNavigationItemClick,
+            onBottomPlayerClick = onBottomPlayerClick,
+        )
+    }
+    composable<NavScreen.Settings.Main> {
+        SettingsScreen(
+            modifier = modifier,
+            playerViewModel = playerViewModel,
+            navController = navController,
+            onNavigationItemClick = onNavigationItemClick,
+            onBottomPlayerClick = onBottomPlayerClick,
+        )
+    }
+
+}
+
+//@Composable
+@RequiresApi(Build.VERSION_CODES.Q)
+private fun NavGraphBuilder.songsNavigation(
+//    navController: NavHostController,
+    playerViewModel: PlayerViewModel,
+    onBackClick: () -> Unit = {},
+    onMenuClick: (Long) -> Unit = {},
+    playSongExtra: (Long, SongFilter, Boolean, Int) -> Unit = { _, _, _, _ -> }
+){
+    composable<NavScreen.Songs.Album> {
+        AlbumSongs(
+            playerViewModel = playerViewModel,
+            onSongClick = playSongExtra,
+            onBackClick = onBackClick,
+            onMenuClick = onMenuClick
+        )
+    }
+    composable<NavScreen.Songs.Artist> {
+        ArtistSongs(
+            playerViewModel = playerViewModel,
+            onSongClick = playSongExtra,
+            onBackClick = onBackClick,
+            onMenuClick = onMenuClick
+        )
+    }
+    composable<NavScreen.Songs.Playlist> {
+        PlaylistSongs(
+            playerViewModel = playerViewModel,
+            onSongClick = playSongExtra,
+            onBackClick = onBackClick,
+            onMenuClick = onMenuClick
+        )
+    }
+}
+
+private fun NavGraphBuilder.settingNavigation(){
+    composable< NavScreen.Settings.General> {
+        GeneralSettingScreen()
+    }
+    composable<NavScreen.Settings.Audio> {
+        AudioSettingScreen()
+    }
+    composable< NavScreen.Settings.Notifications> {
+        NotificationSettingScreen()
+    }
+    composable< NavScreen.Settings.Advanced> {
+        AdvanceSettingScreen()
+    }
+    composable< NavScreen.Settings.Library> {
+        LibrarySettingScreen()
+    }
+}
+
 
 
