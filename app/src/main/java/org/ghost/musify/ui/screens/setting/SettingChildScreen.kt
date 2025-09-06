@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 fun SettingChildScreen(
     modifier: Modifier = Modifier,
     title: String,
+    onBack: () -> Unit,
     content: @Composable () -> Unit = {},
 ) {
     Scaffold(
@@ -27,7 +28,7 @@ fun SettingChildScreen(
                 title = { Text(text = title) },
                 navigationIcon = {
                     IconButton(
-                        onClick = {}
+                        onClick = onBack
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,

@@ -8,10 +8,14 @@ import org.ghost.musify.ui.components.SettingsEditableListItem
 import org.ghost.musify.ui.screens.setting.SettingChildScreen
 
 @Composable
-fun AdvanceSettingScreen(modifier: Modifier = Modifier) {
+fun AdvanceSettingScreen(
+    modifier: Modifier = Modifier,
+    onBackClick: () -> Unit,
+) {
     SettingChildScreen(
         modifier = modifier,
         title = "General",
+        onBack = onBackClick,
     ) {
         LazyColumn {
             item {

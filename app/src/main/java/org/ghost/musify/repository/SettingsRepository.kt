@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.ghost.musify.data.AppSettings
@@ -20,7 +21,7 @@ import javax.inject.Inject
 // Create a DataStore instance using a property delegate
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
 
-class SettingsRepository @Inject constructor(private val context: Context) {
+class SettingsRepository @Inject constructor(@param: ApplicationContext private val context: Context) {
 
     private val dataStore = context.settingsDataStore
 
@@ -55,6 +56,7 @@ class SettingsRepository @Inject constructor(private val context: Context) {
     // Audio & Playback
     suspend fun updateCrossfadeEnabled(enabled: Boolean) {
         dataStore.edit { it[SettingsKeys.CROSSFADE_ENABLED] = enabled }
+
     }
 
     suspend fun updateCrossfadeDuration(seconds: Int) {
@@ -104,6 +106,10 @@ class SettingsRepository @Inject constructor(private val context: Context) {
 
     suspend fun updateDownloadOnWifiOnly(wifiOnly: Boolean) {
         dataStore.edit { it[SettingsKeys.DOWNLOAD_ON_WIFI_ONLY] = wifiOnly }
+    }
+
+    suspend fun updateArtistNameSeparator(separator: String) {
+        dataStore.edit { it[SettingsKeys.ARTIST_NAME_SEPARATOR] = separator }
     }
 
     // Notifications & Widgets
@@ -168,6 +174,7 @@ class SettingsRepository @Inject constructor(private val context: Context) {
             preferences[SettingsKeys.PREFER_EMBEDDED_ART] ?: default.preferEmbeddedArt
         val downloadOnWifiOnly =
             preferences[SettingsKeys.DOWNLOAD_ON_WIFI_ONLY] ?: default.downloadOnWifiOnly
+        val artistNameSeparator = preferences[SettingsKeys.ARTIST_NAME_SEPARATOR] ?: default.artistNameSeparator
 
         // Notifications & Widgets
         val notificationStyle = NotificationStyle.valueOf(

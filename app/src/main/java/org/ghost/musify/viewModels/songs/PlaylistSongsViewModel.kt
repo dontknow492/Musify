@@ -67,7 +67,7 @@ class PlaylistSongsViewModel @Inject constructor(
         }
             .filterNotNull()
             .flatMapLatest { songRequestParameters ->
-                repository.getPlaylistSongs(
+                repository.filterSongs(
                     query = _searchQuery.value,
                     sortBy = _sortBy.value,
                     sortOrder = _sortOrder.value,

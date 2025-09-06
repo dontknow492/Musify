@@ -24,6 +24,9 @@ import org.ghost.musify.enums.SortOrder
 @Dao
 interface SongDao {
     // --- Insert & Update ---
+    
+
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSongs(songs: List<SongEntity>)
 
@@ -69,79 +72,8 @@ interface SongDao {
     suspend fun updateSong(song: SongEntity)
 
     // --- Read (with Paging Support) ---
-    fun getAllSongs(
-        query: String,
-        artist: String,
-        album: String,
-        artistId: Long?,
-        albumId: Long?,
-        sortBy: SortBy,
-        sortOrder: SortOrder
-    ): PagingSource<Int, SongWithAlbumAndArtist> {
-        return if (sortOrder == SortOrder.ASCENDING) {
-            getSongsAsc(query, artist, album, artistId, albumId, sortBy.value)
-        } else {
-            getSongsDesc(query, artist, album, artistId, albumId, sortBy.value)
-        }
-    }
 
-    @Transaction
-    @Query(
-        """
-        SELECT songs.* FROM songs
-            INNER JOIN artists ON songs.artist_id = artists.id
-            INNER JOIN albums ON songs.album_id = albums.id
-            WHERE
-                songs.title LIKE '%' || :query || '%'
-                AND artists.name LIKE '%' || :artist || '%'
-                AND albums.title LIKE '%' || :album || '%'
-                AND (:artistId IS NULL OR songs.artist_id = :artistId)
-                AND (:albumId IS NULL OR songs.album_id = :albumId)
-        ORDER BY
-            CASE WHEN :sortBy = 'title' THEN songs.title END ASC,
-            CASE WHEN :sortBy = 'duration' THEN songs.duration END ASC,
-            CASE WHEN :sortBy = 'year' THEN songs.year END ASC,
-            CASE WHEN :sortBy = 'date_added' THEN songs.date_added END ASC,
-            CASE WHEN :sortBy = 'date_modified' THEN songs.date_modified END ASC
-    """
-    )
-    fun getSongsAsc(
-        query: String,
-        artist: String,
-        album: String,
-        artistId: Long?,
-        albumId: Long?,
-        sortBy: String
-    ): PagingSource<Int, SongWithAlbumAndArtist>
 
-    @Transaction
-    @Query(
-        """
-            SELECT songs.* FROM songs
-            INNER JOIN artists ON songs.artist_id = artists.id
-            INNER JOIN albums ON songs.album_id = albums.id
-            WHERE
-                songs.title LIKE '%' || :query || '%'
-                AND artists.name LIKE '%' || :artist || '%'
-                AND albums.title LIKE '%' || :album || '%'
-                AND (:artistId IS NULL OR songs.artist_id = :artistId)
-                AND (:albumId IS NULL OR songs.album_id = :albumId)
-            ORDER BY
-                CASE WHEN :sortBy = 'title' THEN songs.title END DESC,
-                CASE WHEN :sortBy = 'duration' THEN songs.duration END DESC,
-                CASE WHEN :sortBy = 'year' THEN songs.year END DESC,
-                CASE WHEN :sortBy = 'date_added' THEN songs.date_added END DESC,
-                CASE WHEN :sortBy = 'date_modified' THEN songs.date_modified END DESC
-    """
-    )
-    fun getSongsDesc(
-        query: String,
-        artist: String,
-        album: String,
-        artistId: Long?,
-        albumId: Long?,
-        sortBy: String
-    ): PagingSource<Int, SongWithAlbumAndArtist>
 
     @Query("SELECT * FROM songs WHERE id = :songId")
     suspend fun getSongById(songId: Long): SongEntity?
@@ -227,86 +159,7 @@ interface SongDao {
     fun getArtistSongsCount(artistName: String): Flow<Int>
 
 
-    // one time fetch
-    suspend fun getAllSongsList(
-        query: String,
-        artist: String,
-        album: String,
-        artistId: Long?,
-        albumId: Long?,
-        sortBy: SortBy,
-        sortOrder: SortOrder
-    ): List<SongWithAlbumAndArtist> {
-        return if (sortOrder == SortOrder.ASCENDING) {
-            getSongsAscList(query, artist, album, artistId, albumId, sortBy.value)
-        } else {
-            getSongsDescList(query, artist, album, artistId, albumId, sortBy.value)
-        }
-    }
 
-    // The new suspend function for ASCENDING order
-    @Transaction
-    @Query(
-        """
-    SELECT songs.* FROM songs
-        INNER JOIN artists ON songs.artist_id = artists.id
-        INNER JOIN albums ON songs.album_id = albums.id
-        WHERE
-            songs.title LIKE '%' || :query || '%'
-            AND artists.name LIKE '%' || :artist || '%'
-            AND albums.title LIKE '%' || :album || '%'
-            AND (:artistId IS NULL OR songs.artist_id = :artistId)
-            AND (:albumId IS NULL OR songs.album_id = :albumId)
-    ORDER BY
-        CASE WHEN :sortBy = 'title' THEN songs.title END ASC,
-        CASE WHEN :sortBy = 'duration' THEN songs.duration END ASC,
-        CASE WHEN :sortBy = 'year' THEN songs.year END ASC,
-        CASE WHEN :sortBy = 'date_added' THEN songs.date_added END ASC,
-        CASE WHEN :sortBy = 'date_modified' THEN songs.date_modified END ASC
-"""
-    )
-    suspend fun getSongsAscList(
-        query: String,
-        artist: String,
-        album: String,
-        artistId: Long?,
-        albumId: Long?,
-        sortBy: String
-    ): List<SongWithAlbumAndArtist>
-
-    // The new suspend function for DESCENDING order
-    @Transaction
-    @Query(
-        """
-        SELECT songs.* FROM songs
-        INNER JOIN artists ON songs.artist_id = artists.id
-        INNER JOIN albums ON songs.album_id = albums.id
-        WHERE
-            songs.title LIKE '%' || :query || '%'
-            AND artists.name LIKE '%' || :artist || '%'
-            AND albums.title LIKE '%' || :album || '%'
-            AND (:artistId IS NULL OR songs.artist_id = :artistId)
-            AND (:albumId IS NULL OR songs.album_id = :albumId)
-        ORDER BY
-            CASE WHEN :sortBy = 'title' THEN songs.title END DESC,
-            CASE WHEN :sortBy = 'duration' THEN songs.duration END DESC,
-            CASE WHEN :sortBy = 'year' THEN songs.year END DESC,
-            CASE WHEN :sortBy = 'date_added' THEN songs.date_added END DESC,
-            CASE WHEN :sortBy = 'date_modified' THEN songs.date_modified END DESC
-"""
-    )
-    suspend fun getSongsDescList(
-        query: String,
-        artist: String,
-        album: String,
-        artistId: Long?,
-        albumId: Long?,
-        sortBy: String
-    ): List<SongWithAlbumAndArtist>
-
-
-//    @Query("SELECT * FROM songs WHERE id = :songId")
-//    suspend fun getSongWithAlbumAndArtistById(songId: Long): SongWithAlbumAndArtist?
 
 
     /**
@@ -341,5 +194,175 @@ interface SongDao {
     """
     )
     fun getSongWithLikeStatusById(songId: Long): Flow<SongDetailsWithLikeStatus?>
+
+    /**
+     * Fetches songs with their related album and artist details for a given list of IDs,
+     * preserving the original order of the ID list.
+     *
+     * @param songIds The ordered list of song IDs to fetch.
+     * @return A list of SongWithAlbumAndArtist objects in the same order as the input IDs.
+     */
+    @Transaction
+    @Query("""
+        SELECT * FROM songs
+        WHERE id IN (:songIds)
+        ORDER BY
+            CASE id
+                WHEN :songIds THEN 1
+                ELSE 2
+            END
+    """)
+    fun getSongsWithAlbumAndArtistByIds(songIds: List<Long>): List<SongWithAlbumAndArtist>
+
+
+    
+
+    // The single, unified query that handles all sorting.
+    // It's better to make this private or protected.
+    @Transaction
+    @Query(
+        """
+        SELECT songs.id FROM songs
+        INNER JOIN artists ON songs.artist_id = artists.id
+        INNER JOIN albums ON songs.album_id = albums.id
+        LEFT JOIN favorite_songs f ON songs.id = f.song_id
+        WHERE
+            songs.title LIKE '%' || :query || '%'
+            AND artists.name LIKE '%' || :artist || '%'
+            AND albums.title LIKE '%' || :album || '%'
+            AND (:artistId IS NULL OR songs.artist_id = :artistId)
+            AND (:albumId IS NULL OR songs.album_id = :albumId)
+            -- The subquery needs the table name specified as well
+            AND (:playlistId IS NULL OR songs.id IN (
+                SELECT song_id FROM playlist_song_join WHERE playlist_id = :playlistId
+            ))
+            AND (:fetchFavoritesOnly = 0 OR f.song_id IS NOT NULL)
+            
+        ORDER BY
+            -- This complex CASE statement handles both column and direction dynamically
+            CASE WHEN :sortBy = 'title' AND :sortOrder = 'ASCENDING' THEN songs.title END ASC,
+            CASE WHEN :sortBy = 'title' AND :sortOrder = 'DESCENDING' THEN songs.title END DESC,
+            
+            CASE WHEN :sortBy = 'duration' AND :sortOrder = 'ASCENDING' THEN songs.duration END ASC,
+            CASE WHEN :sortBy = 'duration' AND :sortOrder = 'DESCENDING' THEN songs.duration END DESC,
+            
+            CASE WHEN :sortBy = 'year' AND :sortOrder = 'ASCENDING' THEN songs.year END ASC,
+            CASE WHEN :sortBy = 'year' AND :sortOrder = 'DESCENDING' THEN songs.year END DESC,
+            
+            CASE WHEN :sortBy = 'date_added' AND :sortOrder = 'ASCENDING' THEN songs.date_added END ASC,
+            CASE WHEN :sortBy = 'date_added' AND :sortOrder = 'DESCENDING' THEN songs.date_added END DESC,
+
+            CASE WHEN :sortBy = 'date_modified' AND :sortOrder = 'ASCENDING' THEN songs.date_modified END ASC,
+            CASE WHEN :sortBy = 'date_modified' AND :sortOrder = 'DESCENDING' THEN songs.date_modified END DESC
+        """
+    )
+    suspend fun getAllSongIds(
+        fetchFavoritesOnly: Boolean = false,
+        query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
+        playlistId: Long? = null,
+        sortBy: String,
+        sortOrder: String // Pass the order as a string: "ASCENDING" or "DESCENDING"
+    ): List<Long>
+
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM songs
+        INNER JOIN artists ON songs.artist_id = artists.id
+        INNER JOIN albums ON songs.album_id = albums.id
+        LEFT JOIN favorite_songs f ON songs.id = f.song_id
+        WHERE
+            songs.title LIKE '%' || :query || '%'
+            AND artists.name LIKE '%' || :artist || '%'
+            AND albums.title LIKE '%' || :album || '%'
+            AND (:artistId IS NULL OR songs.artist_id = :artistId)
+            AND (:albumId IS NULL OR songs.album_id = :albumId)
+            -- The subquery needs the table name specified as well
+            AND (:playlistId IS NULL OR songs.id IN (
+                SELECT song_id FROM playlist_song_join WHERE playlist_id = :playlistId
+            ))
+            AND (:fetchFavoritesOnly = 0 OR f.song_id IS NOT NULL)
+        ORDER BY
+            -- This complex CASE statement handles both column and direction dynamically
+            CASE WHEN :sortBy = 'title' AND :sortOrder = 'ASCENDING' THEN songs.title END ASC,
+            CASE WHEN :sortBy = 'title' AND :sortOrder = 'DESCENDING' THEN songs.title END DESC,
+            
+            CASE WHEN :sortBy = 'duration' AND :sortOrder = 'ASCENDING' THEN songs.duration END ASC,
+            CASE WHEN :sortBy = 'duration' AND :sortOrder = 'DESCENDING' THEN songs.duration END DESC,
+            
+            CASE WHEN :sortBy = 'year' AND :sortOrder = 'ASCENDING' THEN songs.year END ASC,
+            CASE WHEN :sortBy = 'year' AND :sortOrder = 'DESCENDING' THEN songs.year END DESC,
+            
+            CASE WHEN :sortBy = 'date_added' AND :sortOrder = 'ASCENDING' THEN songs.date_added END ASC,
+            CASE WHEN :sortBy = 'date_added' AND :sortOrder = 'DESCENDING' THEN songs.date_added END DESC,
+
+            CASE WHEN :sortBy = 'date_modified' AND :sortOrder = 'ASCENDING' THEN songs.date_modified END ASC,
+            CASE WHEN :sortBy = 'date_modified' AND :sortOrder = 'DESCENDING' THEN songs.date_modified END DESC
+    """)
+    suspend fun getAllSongsList(
+        fetchFavoritesOnly: Boolean = false,
+        query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
+        playlistId: Long? = null,
+        sortBy: String,
+        sortOrder: String // Pass the order as a string: "ASCENDING" or "DESCENDING"
+    ): List<SongWithAlbumAndArtist>
+
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM songs
+        INNER JOIN artists ON songs.artist_id = artists.id
+        INNER JOIN albums ON songs.album_id = albums.id
+        LEFT JOIN favorite_songs f ON songs.id = f.song_id
+        WHERE
+            songs.title LIKE '%' || :query || '%'
+            AND artists.name LIKE '%' || :artist || '%'
+            AND albums.title LIKE '%' || :album || '%'
+            AND (:artistId IS NULL OR songs.artist_id = :artistId)
+            AND (:albumId IS NULL OR songs.album_id = :albumId)
+            -- The subquery needs the table name specified as well
+            AND (:playlistId IS NULL OR songs.id IN (
+                SELECT song_id FROM playlist_song_join WHERE playlist_id = :playlistId
+            ))
+            AND (:fetchFavoritesOnly = 0 OR f.song_id IS NOT NULL)
+        ORDER BY
+            -- This complex CASE statement handles both column and direction dynamically
+            CASE WHEN :sortBy = 'title' AND :sortOrder = 'ASCENDING' THEN songs.title END ASC,
+            CASE WHEN :sortBy = 'title' AND :sortOrder = 'DESCENDING' THEN songs.title END DESC,
+            
+            CASE WHEN :sortBy = 'duration' AND :sortOrder = 'ASCENDING' THEN songs.duration END ASC,
+            CASE WHEN :sortBy = 'duration' AND :sortOrder = 'DESCENDING' THEN songs.duration END DESC,
+            
+            CASE WHEN :sortBy = 'year' AND :sortOrder = 'ASCENDING' THEN songs.year END ASC,
+            CASE WHEN :sortBy = 'year' AND :sortOrder = 'DESCENDING' THEN songs.year END DESC,
+            
+            CASE WHEN :sortBy = 'date_added' AND :sortOrder = 'ASCENDING' THEN songs.date_added END ASC,
+            CASE WHEN :sortBy = 'date_added' AND :sortOrder = 'DESCENDING' THEN songs.date_added END DESC,
+
+            CASE WHEN :sortBy = 'date_modified' AND :sortOrder = 'ASCENDING' THEN songs.date_modified END ASC,
+            CASE WHEN :sortBy = 'date_modified' AND :sortOrder = 'DESCENDING' THEN songs.date_modified END DESC
+    """
+    )
+    fun getAllSongs(
+        fetchFavoritesOnly: Boolean = false,
+        query: String,
+        artist: String,
+        album: String,
+        artistId: Long?,
+        albumId: Long?,
+        playlistId: Long? = null,
+        sortBy: String,
+        sortOrder: String // Pass the order as a string: "ASCENDING" or "DESCENDING"
+    ): PagingSource<Int, SongWithAlbumAndArtist>
 }
 

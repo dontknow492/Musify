@@ -15,7 +15,7 @@ import coil3.request.crossfade
 import org.ghost.musify.ui.components.PlayerBottomAppBar
 import org.ghost.musify.ui.components.SongGroupWindow
 import org.ghost.musify.ui.models.SongFilter
-import org.ghost.musify.ui.models.SongWindowData
+import org.ghost.musify.data.SongWindowData
 import org.ghost.musify.ui.models.SongsCategory
 import org.ghost.musify.utils.DynamicThemeFromImage
 import org.ghost.musify.viewModels.PlayerViewModel

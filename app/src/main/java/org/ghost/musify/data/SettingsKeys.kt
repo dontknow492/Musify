@@ -26,6 +26,7 @@ object SettingsKeys {
     val DOWNLOAD_ALBUM_ART = booleanPreferencesKey("download_album_art")
     val PREFER_EMBEDDED_ART = booleanPreferencesKey("prefer_embedded_art")
     val DOWNLOAD_ON_WIFI_ONLY = booleanPreferencesKey("download_on_wifi_only")
+    val ARTIST_NAME_SEPARATOR = stringPreferencesKey("artist_name_separator")
 
     val NOTIFICATION_STYLE = stringPreferencesKey("notification_style")
     val COLORIZED_NOTIFICATION = booleanPreferencesKey("colorized_notification")

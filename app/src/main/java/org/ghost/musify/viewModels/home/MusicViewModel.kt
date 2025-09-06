@@ -28,8 +28,8 @@ class MusicViewModel @Inject constructor(
     )
 
     private var mediaController: MediaController? = null
-    val music = repository.getAllSongs().cachedIn(viewModelScope)
-    val favoriteSongs = repository.getFavoriteSongs().cachedIn(viewModelScope)
+    val music = repository.filterSongs().cachedIn(viewModelScope)
+    val favoriteSongs = repository.filterSongs(favoritesOnly = true).cachedIn(viewModelScope)
 
     // --- State for the UI ---
 

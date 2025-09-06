@@ -22,7 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.ghost.musify.R
-import org.ghost.musify.ui.models.BottomNavigationData
+import org.ghost.musify.data.BottomNavigationData
 import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.ui.screens.BottomPlayer
 import org.ghost.musify.viewModels.PlayerViewModel

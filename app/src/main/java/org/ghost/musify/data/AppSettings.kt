@@ -8,7 +8,7 @@ import org.ghost.musify.enums.Theme
 
 data class AppSettings(
     // General
-    val theme: Theme = Theme.SYSTEM_DEFAULT,
+    val theme: Theme = Theme.AUTO,
     val useMaterialYou: Boolean = true,
     val accentColor: Int = 0xFF6200EE.toInt(), // Default purple color
     val language: String = "system",
@@ -30,6 +30,7 @@ data class AppSettings(
     val downloadAlbumArt: Boolean = true,
     val preferEmbeddedArt: Boolean = true,
     val downloadOnWifiOnly: Boolean = true,
+    val artistNameSeparator: String = ",-&",
 
     // Notifications & Widgets
     val notificationStyle: NotificationStyle = NotificationStyle.STANDARD,

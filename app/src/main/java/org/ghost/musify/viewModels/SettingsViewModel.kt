@@ -3,6 +3,8 @@ package org.ghost.musify.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -15,7 +17,8 @@ import org.ghost.musify.enums.StartScreen
 import org.ghost.musify.enums.Theme
 import org.ghost.musify.repository.SettingsRepository
 
-class SettingsViewModel(private val repository: SettingsRepository) : ViewModel() {
+@HiltViewModel
+class SettingsViewModel @Inject constructor(private val repository: SettingsRepository) : ViewModel() {
 
     // Expose the settings as a StateFlow for the UI to observe.
     // It will automatically update when the DataStore changes.
@@ -136,6 +139,12 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setDownloadOnWifiOnly(wifiOnly: Boolean) {
         viewModelScope.launch {
             repository.updateDownloadOnWifiOnly(wifiOnly)
+        }
+    }
+
+    fun setArtistNameSeparator(separator: String) {
+        viewModelScope.launch {
+            repository.updateArtistNameSeparator(separator)
         }
     }
 

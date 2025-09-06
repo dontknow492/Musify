@@ -1,4 +1,4 @@
-package org.ghost.musify.ui.models
+package org.ghost.musify.data
 
 import androidx.paging.compose.LazyPagingItems
 import coil3.request.ImageRequest

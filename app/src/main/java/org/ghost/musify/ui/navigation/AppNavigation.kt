@@ -14,12 +14,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
+import org.ghost.musify.enums.StartScreen
 import org.ghost.musify.ui.dialog.AddToPlaylistDialog
 import org.ghost.musify.ui.dialog.menu.SongMenu
 import org.ghost.musify.ui.models.SongFilter
@@ -42,6 +45,7 @@ import org.ghost.musify.viewModels.MainUiState
 import org.ghost.musify.viewModels.MainViewModel
 import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.SearchViewModel
+import org.ghost.musify.viewModels.SettingsViewModel
 import org.ghost.musify.viewModels.home.MusicViewModel
 
 const val TAG = "NavigationHandler"
@@ -56,7 +60,10 @@ fun AppNavigation(
     viewModel: MainViewModel,
     playerViewModel: PlayerViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+
+
 
     var hasNavigatedFromSplash by rememberSaveable { mutableStateOf(false) }
 
@@ -148,7 +155,7 @@ fun AppNavigation(
 
         NavHost(
             navController = navController,
-            startDestination = startDestination,
+            startDestination = NavScreen.Launch.Splash,
         ) {
             composable<NavScreen.Launch.Splash> {}
 
@@ -214,7 +221,9 @@ fun AppNavigation(
             }
 
             // setting
-            settingNavigation()
+            settingNavigation(
+                onBackClick = onBackClick
+            )
 
 
         }
@@ -333,23 +342,38 @@ private fun NavGraphBuilder.songsNavigation(
     }
 }
 
-private fun NavGraphBuilder.settingNavigation() {
+private fun NavGraphBuilder.settingNavigation(
+    onBackClick: () -> Unit,
+) {
     composable<NavScreen.Settings.General> {
-        GeneralSettingScreen()
+        GeneralSettingScreen(
+            onBackClick = onBackClick,
+        )
     }
     composable<NavScreen.Settings.Audio> {
-        AudioSettingScreen()
+        AudioSettingScreen(
+            onBackClick = onBackClick,
+        )
     }
     composable<NavScreen.Settings.Notifications> {
-        NotificationSettingScreen()
+        NotificationSettingScreen(
+            onBackClick = onBackClick,
+        )
     }
     composable<NavScreen.Settings.Advanced> {
-        AdvanceSettingScreen()
+        AdvanceSettingScreen(
+            onBackClick = onBackClick,
+        )
     }
     composable<NavScreen.Settings.Library> {
-        LibrarySettingScreen()
+        LibrarySettingScreen(
+            onBackClick = onBackClick,
+        )
     }
 }
+
+
+
 
 
 

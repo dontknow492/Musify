@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import org.ghost.musify.R
-import org.ghost.musify.ui.models.SongWindowData
+import org.ghost.musify.data.SongWindowData
 
 
 @OptIn(ExperimentalMaterial3Api::class)

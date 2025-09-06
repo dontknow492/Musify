@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,29 +16,36 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint
+import org.ghost.musify.enums.StartScreen
+import org.ghost.musify.enums.Theme
 import org.ghost.musify.ui.navigation.AppNavigation
 import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.ui.theme.MusifyTheme
 import org.ghost.musify.viewModels.MainUiState
 import org.ghost.musify.viewModels.MainViewModel
 import org.ghost.musify.viewModels.PlayerViewModel
+import org.ghost.musify.viewModels.SettingsViewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     lateinit var navController: NavHostController
     private val mainViewModel: MainViewModel by viewModels()
     private val playerViewModel: PlayerViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,15 +58,21 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         setContent {
+            val settingsState by settingsViewModel.settingsState.collectAsStateWithLifecycle()
+            val startDestination = mapStartScreenToNavScreen(settingsState.startScreen)
             navController = rememberNavController()
             MusifyTheme(
-                dynamicColor = false
+                dynamicColor = settingsState.useMaterialYou,
+                darkTheme = when(settingsState.theme){
+                    Theme.LIGHT -> false
+                    Theme.DARK -> true
+                    Theme.AUTO -> isSystemInDarkTheme()
+                }
             ) {
-                val start = NavScreen.Main.Home
                 AppNavigation(
                     navController = navController,
-                    startDestination = start,
                     viewModel = mainViewModel,
+                    startDestination = startDestination,
                     playerViewModel = playerViewModel
                 )
             }
@@ -130,4 +144,21 @@ fun RequestAudioPermission(
 
     // 1. Determine the correct permission based on the Android version
 
+}
+
+fun mapStartScreenToNavScreen(startScreen: StartScreen): NavScreen {
+    when(startScreen){
+        StartScreen.Home -> {
+            return NavScreen.Main.Home
+        }
+        StartScreen.Search -> {
+            return NavScreen.Main.Search
+        }
+        StartScreen.History -> {
+            return NavScreen.Main.History
+        }
+        StartScreen.Settings -> {
+            return NavScreen.Settings.Main
+        }
+    }
 }

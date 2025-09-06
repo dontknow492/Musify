@@ -111,7 +111,7 @@ class SearchViewModel @Inject constructor(
             try {
                 // Run all search queries in parallel for better performance.
                 coroutineScope {
-                    val songsDeferred = async { musicRepository.getAllSongsList(query) }
+                    val songsDeferred = async { musicRepository.filterSongsList(query = query) }
                     val playlistsDeferred = async {
                         musicRepository.getAllPlaylistAsList(query).map { playlist ->
                             PlaylistWithCover(

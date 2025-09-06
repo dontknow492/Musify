@@ -1,4 +1,4 @@
-package org.ghost.musify.ui.models
+package org.ghost.musify.data
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.ghost.musify.ui.navigation.NavScreen

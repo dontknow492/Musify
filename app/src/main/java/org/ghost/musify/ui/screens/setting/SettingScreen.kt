@@ -16,11 +16,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import org.ghost.musify.ui.components.MyBottomAppBar
 import org.ghost.musify.ui.components.SettingsCategoryItem
 import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.viewModels.PlayerViewModel
+import org.ghost.musify.viewModels.SettingsViewModel
 
 //import org.ghost.musify.ui.navigation.NavScreen.Settings
 

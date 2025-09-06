@@ -113,8 +113,16 @@ interface ArtistImageDao {
         }
     }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertAll(artistItem: List<ArtistImageEntity>)
+
+
+    // New function to get all the names we already have in the database.
+    @Query("SELECT name FROM artists_image")
+    suspend fun getAllNames(): List<String>
+
+    // You can keep this if you need it elsewhere, but reparseArtists won't use it.
+
 
 
 }

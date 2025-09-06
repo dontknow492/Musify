@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -40,6 +41,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -104,12 +106,16 @@ fun SettingsCategoryItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    enabled: Boolean = true,
+    onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            // 1. Visually indicate the enabled/disabled state by changing alpha
+            .alpha(if (enabled) 1f else 0.5f)
+            // 2. Pass the 'enabled' flag to the clickable modifier
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -135,16 +141,24 @@ fun SettingsClickableItem(
     title: String,
     description: String,
     searchQuery: String = "", // <-- New parameter
-    icon: @Composable () -> Unit = {},
+    enabled: Boolean = true,
+    icon: (@Composable () -> Unit)? = null,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            // 1. Visually indicate the enabled/disabled state by changing alpha
+            .alpha(if (enabled) 1f else 0.5f)
+            // 2. Pass the 'enabled' flag to the clickable modifier
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (icon != null) {
+            icon()
+            Spacer(modifier = Modifier.width(16.dp))
+        }
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -186,15 +200,23 @@ fun SettingsSwitchItem(
     searchQuery: String = "", // <-- New parameter
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    icon: @Composable () -> Unit = {},
+    enabled: Boolean = true,
+    icon: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
+            // 1. Visually indicate the enabled/disabled state by changing alpha
+            .alpha(if (enabled) 1f else 0.5f)
+            // 2. Pass the 'enabled' flag to the clickable modifier
+            .clickable(enabled = enabled, onClick = { onCheckedChange(!checked) })
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (icon != null) {
+            icon()
+            Spacer(modifier = Modifier.width(16.dp))
+        }
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -248,19 +270,28 @@ fun SettingsInputItem(
     description: String,
     value: String,
     onValueChange: (String) -> Unit,
-    icon: @Composable () -> Unit = {},
+    icon: (@Composable () -> Unit)? = null,
     searchQuery: String = "",
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    enabled: Boolean = true,
+    suffix: String? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // 1. Visually indicate the enabled/disabled state by changing alpha
+            .alpha(if (enabled) 1f else 0.5f)
+            // 2. Pass the 'enabled' flag to the clickable modifier
             .padding(
                 horizontal = 16.dp,
                 vertical = 20.dp
             ), // Increased vertical padding for better spacing
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (icon != null) {
+            icon()
+            Spacer(modifier = Modifier.width(16.dp))
+        }
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -282,21 +313,34 @@ fun SettingsInputItem(
         // Use BasicTextField for a clean, unstyled input area
         BasicTextField(
             value = value,
+            enabled = enabled,
             onValueChange = onValueChange,
             keyboardOptions = keyboardOptions,
             singleLine = true,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End
             ),
             decorationBox = { innerTextField ->
+                // 2. The decorationBox now uses a Row to place the suffix next to the input
                 Row(
-                    modifier = Modifier
-                        .width(80.dp) // Give the input field a consistent width
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.End
+                    // Removed fixed width to allow the field to accommodate the suffix
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically // Ensures alignment
                 ) {
-                    innerTextField()
+                    innerTextField() // This is the actual text input
+
+                    // 3. If the suffix is not null, display it
+                    if (suffix != null) {
+                        Spacer(Modifier.width(4.dp)) // Add space between value and suffix
+                        Text(
+                            text = suffix,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant // Use a subtle color
+                        )
+                    }
                 }
             }
         )
@@ -322,9 +366,10 @@ fun <T : Enum<T>> SettingsCollapsibleEnumItem(
     options: List<T>,
     currentSelection: T,
     onSelectionChange: (T) -> Unit,
-    icon: @Composable () -> Unit = {},
+    icon: (@Composable () -> Unit)? = null,
     searchQuery: String = "",
     forceExpanded: Boolean = false,
+    enabled: Boolean = true,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
@@ -336,10 +381,15 @@ fun <T : Enum<T>> SettingsCollapsibleEnumItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { isExpanded = !isExpanded }
+                .alpha(if (enabled) 1f else 0.5f)
+                .clickable(enabled = enabled) { isExpanded = !isExpanded }
                 .padding(horizontal = 16.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (icon != null) {
+                icon()
+                Spacer(modifier = Modifier.width(16.dp))
+            }
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
@@ -374,7 +424,7 @@ fun <T : Enum<T>> SettingsCollapsibleEnumItem(
 
         // The collapsible part with the list of options
         AnimatedVisibility(
-            visible = isExpanded || forceExpanded,
+            visible = (isExpanded || forceExpanded) && enabled,
         ) {
             Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
                 options.forEach { option ->
@@ -428,9 +478,10 @@ fun SettingsEditableListItem(
     items: List<String>,
     onAddClick: () -> Unit,
     onItemDeleted: (String) -> Unit,
-    icon: @Composable () -> Unit = {},
+    icon: (@Composable () -> Unit)? = null,
     searchQuery: String = "",
     forceExpanded: Boolean = false,
+    enabled: Boolean = true,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
@@ -442,10 +493,15 @@ fun SettingsEditableListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { isExpanded = !isExpanded }
+                .alpha(if (enabled) 1f else 0.5f)
+                .clickable(enabled = enabled) { isExpanded = !isExpanded }
                 .padding(horizontal = 16.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (icon != null) {
+                icon()
+                Spacer(modifier = Modifier.width(16.dp))
+            }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                 Text(
                     text = highlightSearchQuery(text = title, query = searchQuery),
@@ -475,7 +531,7 @@ fun SettingsEditableListItem(
         }
 
         // The collapsible part with the list of items and an "Add" button
-        AnimatedVisibility(visible = isExpanded || forceExpanded) {
+        AnimatedVisibility(visible = (isExpanded || forceExpanded) && enabled) {
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 items.forEach { item ->
                     DeletableItemRow(text = item, onDelete = { onItemDeleted(item) })
