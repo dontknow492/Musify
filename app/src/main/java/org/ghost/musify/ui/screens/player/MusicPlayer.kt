@@ -1,4 +1,4 @@
-package org.ghost.musify.ui.screens
+package org.ghost.musify.ui.screens.player
 
 import android.content.Context
 import android.net.Uri
@@ -35,7 +35,6 @@ import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.CardDefaults
@@ -47,7 +46,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -77,11 +75,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.error
 import org.ghost.musify.R
+import org.ghost.musify.entity.relation.SongDetailsWithLikeStatus
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.ui.components.SwipeableSongItem
 import org.ghost.musify.ui.components.common.CircularProgressBar
@@ -95,6 +95,7 @@ import org.ghost.musify.utils.getSongUri
 import org.ghost.musify.utils.toFormattedDuration
 import org.ghost.musify.viewModels.PlayerStatus
 import org.ghost.musify.viewModels.PlayerViewModel
+import org.ghost.musify.viewModels.QueueViewModel
 
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -105,7 +106,7 @@ fun PlayerWindow(
     onBackClick: () -> Unit,
     onAddToPlaylistClick: (Long) -> Unit,
 ) {
-    val playbackQueue by viewModel.playbackQueue.collectAsState()
+
     var isBottomSheetVisible by remember { mutableStateOf(false) }
     var isSongMenuVisible by remember { mutableStateOf(false) }
     var songMenuId by remember { mutableLongStateOf(-1L) }
@@ -118,10 +119,8 @@ fun PlayerWindow(
 
 
 
-    Log.d("PlayerWindow", "PlayerWindow: ${playbackQueue.size}")
 
-
-    val songId = uiState.currentSong?.song?.id
+    val songId = uiState.currentSong?.songDetail?.song?.id
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -171,8 +170,7 @@ fun PlayerWindow(
             Log.d("PlayerWindows", "PlayerWindow: BottomSheet is visible")
             PlayerBottomSheet(
                 modifier = Modifier,
-                currentSongId = uiState.currentSong?.song?.id,
-                songs = playbackQueue,
+                viewModel = hiltViewModel(),
                 onDismiss = { isBottomSheetVisible = false },
                 onSongRemove = { songId ->
                     viewModel.removeSongFromQueue(songId = songId)
@@ -200,242 +198,9 @@ fun PlayerWindow(
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.Q)
-@Composable
-fun PlayerBottomSheet(
-    modifier: Modifier = Modifier,
-    currentSongId: Long?,
-    songs: List<SongWithAlbumAndArtist>,
-    onDismiss: () -> Unit,
-    onSongRemove: (Long) -> Unit = {},
-    onSongClick: (Long) -> Unit = {},
-    onSongMenuClick: (Long) -> Unit = {},
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-    ) {
-        // 1. Add state to hold and remember the search query
-        var searchQuery by rememberSaveable { mutableStateOf("") }
-
-        var songIndex by remember { mutableIntStateOf(0) }
-        var totalDuration by remember { mutableLongStateOf(0L) }
-
-        LaunchedEffect(songs) {
-            totalDuration = songs.sumOf { it.song.duration }.toLong()
-        }
-
-        // 2. Filter the list based on the search query.
-        // This remembers the result unless the query or the original songs list changes.
-        val filteredSongs = remember(searchQuery, songs) {
-            if (searchQuery.isBlank()) {
-                songs
-            } else {
-                songs.filter { songWithAlbumAndArtist ->
-                    // You can search by title, artist, or album
-                    songWithAlbumAndArtist.song.title.contains(searchQuery, ignoreCase = true) ||
-                            songWithAlbumAndArtist.artist.name.contains(
-                                searchQuery,
-                                ignoreCase = true
-                            )
-                }
-            }
-        }
-
-        Column(modifier = modifier) {
-            // 3. Add the TextField for the search bar UI
-
-            PlayerBottomSheetAction(
-                modifier = Modifier,
-                size = songs.size,
-                current = songIndex + 1,
-                duration = totalDuration
-            )
-
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search in queue...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear Icon")
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(28.dp), // Pill shape
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent, // No underline
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent
-                )
-            )
-
-            // 4. Use the filtered list in the LazyColumn
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp)
-            ) {
-                itemsIndexed(filteredSongs, key = { _, item -> item.song.id }) { index, song ->
-                    val state = rememberSwipeToDismissBoxState(
-                        initialValue = SwipeToDismissBoxValue.Settled,
-                        confirmValueChange = {
-                            when (it) {
-                                SwipeToDismissBoxValue.StartToEnd -> {
-                                    onSongRemove(song.song.id)
-                                    true
-                                }
-
-                                SwipeToDismissBoxValue.EndToStart -> {
-                                    onSongRemove(song.song.id)
-                                    true
-                                }
-
-                                SwipeToDismissBoxValue.Settled -> false
-                            }
-                        },
-                    )
-
-                    val modifier = if (song.song.id == currentSongId){
-                        songIndex = index
-                        Modifier
-                            .border(
-                                border = BorderStroke(4.dp, MaterialTheme.colorScheme.primary),
-                                shape = MaterialTheme.shapes.medium
-                            )
-                            .padding(2.dp)
-                    }
-                    else
-                        Modifier
-
-                    val cardElevation = if (song.song.id == currentSongId)
-                        CardDefaults.cardElevation(defaultElevation = 12.dp)
-                    else
-                        CardDefaults.cardElevation()
 
 
-                    SwipeableSongItem(
-                        dismissState = state,
-                        modifier = modifier
-                            .animateItem(),
-                        songWithAlbumAndArtist = song,
-                        coverArtUri = null,
-                        isDraggable = false,
-                        onCardClick = onSongClick,
-                        onMenuCLick = onSongMenuClick,
-                        leftComposable = {
-                            Box(
-                                modifier = Modifier
-                                    .clip(MaterialTheme.shapes.medium)
-                                    .fillMaxSize()
-                                    .background(
-                                        MaterialTheme.colorScheme.errorContainer
-                                    )
-                                    .padding(16.dp)
-                            ) {
-                                Icon(
-                                    modifier = Modifier.align(Alignment.CenterStart),
-                                    imageVector = Icons.Filled.Delete,
-                                    contentDescription = "more"
-                                )
-                            }
-                        },
-                        rightComposable = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(MaterialTheme.shapes.medium)
-                                    .background(
-                                        MaterialTheme.colorScheme.errorContainer
-                                    )
-                                    .padding(16.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Delete,
-                                    modifier = Modifier.align(Alignment.CenterEnd),
-                                    contentDescription = "more"
-                                )
-                            }
-                        },
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        elevation = cardElevation
-                    )
-                }
-            }
-        }
-    }
-}
 
-@Composable
-private fun PlayerBottomSheetAction(
-    modifier: Modifier = Modifier,
-    size: Int,
-    current: Int,
-    duration: Long,
-){
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 12.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(
-            onClick = {}
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Lock,
-                contentDescription = "lock"
-            )
-        }
-        IconButton(
-            onClick = {}
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.baseline_play_arrow_24),
-                contentDescription = "play"
-            )
-        }
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text("$current/$size", style = MaterialTheme.typography.bodySmall)
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Icon(
-                    painter = painterResource(R.drawable.rounded_timer_24),
-                    contentDescription = "time",
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(duration.toFormattedDuration(), style = MaterialTheme.typography.bodySmall)
-            }
-        }
-        IconButton(
-            onClick = {}
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.rounded_save_24),
-                contentDescription = "Save"
-            )
-        }
-        IconButton(
-            onClick = {}
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.MoreVert,
-                contentDescription = "More"
-            )
-        }
-    }
-}
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -519,11 +284,11 @@ fun PlayerBar(
 ) {
     var isInfoDialogVisible by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
-    val isFavorite by viewModel.isFavorite.collectAsState()
-    val songWithAlbumAndArtist = uiState.currentSong
-    val songTitle = songWithAlbumAndArtist?.song?.title ?: "Unknown"
-    val songArtist = songWithAlbumAndArtist?.artist?.name ?: "Unknown"
-    val songAlbum = songWithAlbumAndArtist?.album?.title ?: "Unknown"
+    val isFavorite = false
+    val songDetailsWithLikeStatus: SongDetailsWithLikeStatus? = uiState.currentSong
+    val songTitle = songDetailsWithLikeStatus?.songDetail?.song?.title ?: "Unknown"
+    val songArtist = songDetailsWithLikeStatus?.songDetail?.artist?.name ?: "Unknown"
+    val songAlbum = songDetailsWithLikeStatus?.songDetail?.album?.title ?: "Unknown"
     val iconSizeLarge = 60.dp
     Column(
         modifier = modifier,
@@ -559,7 +324,7 @@ fun PlayerBar(
 
         Row {
             IconButton(
-                onClick = { viewModel.toggleFavorite() }
+                onClick = { false }
             ) {
                 when (isFavorite) {
                     true -> Icon(
@@ -583,7 +348,7 @@ fun PlayerBar(
                 )
             }
             IconButton(
-                onClick = { onAddToPlaylistClick(uiState.currentSong?.song?.id ?: 0L) }
+                onClick = { onAddToPlaylistClick(uiState.currentSong?.songDetail?.song?.id ?: 0L) }
             ) {
                 Icon(
                     imageVector = Icons.Outlined.AddCircle,
@@ -640,7 +405,7 @@ fun PlayerBar(
 
         MusicProgressBar(
             modifier = Modifier.padding(horizontal = 12.dp),
-            totalDurationMs = uiState.currentSong?.song?.duration?.toLong() ?: 0L,
+            totalDurationMs = uiState.currentSong?.songDetail?.song?.duration?.toLong() ?: 0L,
             currentDurationMs = uiState.currentPosition
         ) {
             viewModel.onSeekTo(it.toLong())
@@ -699,7 +464,7 @@ fun PlayerBar(
 
     AnimatedVisibility(isInfoDialogVisible && uiState.currentSong != null) {
         MusicInfoDialog(
-            songWithAlbumAndArtist = uiState.currentSong!!
+            songWithAlbumAndArtist = uiState.currentSong!!.songDetail
         ) {
             isInfoDialogVisible = false
         }

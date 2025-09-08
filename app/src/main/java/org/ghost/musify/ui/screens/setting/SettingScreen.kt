@@ -38,12 +38,17 @@ data class SettingCategory(
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    navController: NavHostController,
-    playerViewModel: PlayerViewModel,
-    onNavigationItemClick: (NavScreen) -> Unit,
-    onBottomPlayerClick: () -> Unit,
+    onNavigate: (NavScreen) -> Unit,
+    playerViewModel: PlayerViewModel = hiltViewModel(),
 //    navController: NavController
 ) {
+    val onNavigationItemClick = onNavigate
+
+    val onBottomPlayerClick: () -> Unit = {
+        onNavigate(NavScreen.Player(-1L))
+    }
+
+
     val categories = listOf(
         SettingCategory(
             "General",
@@ -99,7 +104,7 @@ fun SettingsScreen(
                     subtitle = category.subtitle,
                     onClick = {
                         // Navigate to the specific detail screen when clicked
-                        navController.navigate(category.route)
+                        onNavigate(category.route)
                     }
                 )
             }

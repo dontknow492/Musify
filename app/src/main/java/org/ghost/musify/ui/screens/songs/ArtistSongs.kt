@@ -20,6 +20,7 @@ import org.ghost.musify.ui.components.SongGroupWindow
 import org.ghost.musify.ui.models.SongFilter
 import org.ghost.musify.data.SongWindowData
 import org.ghost.musify.ui.models.SongsCategory
+import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.utils.DynamicThemeFromImage
 import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.songs.ArtistSongsViewModel
@@ -29,11 +30,23 @@ import org.ghost.musify.viewModels.songs.ArtistSongsViewModel
 fun ArtistSongs(
     modifier: Modifier = Modifier,
     viewModel: ArtistSongsViewModel = hiltViewModel(),
-    playerViewModel: PlayerViewModel,
-    onSongClick: (Long, SongFilter, Boolean, Int) -> Unit,
-    onMenuClick: (Long) -> Unit,
+    playerViewModel: PlayerViewModel = hiltViewModel(),
+    onNavigate: (NavScreen) -> Unit,
     onBackClick: () -> Unit
 ) {
+    val onSongClick: (Long, SongFilter, Boolean, Int) -> Unit =
+        { songId, filter, shuffle, repeatMode ->
+            playerViewModel.playSongFromFilter(songId, filter, shuffle, repeatMode)
+            onNavigate(NavScreen.Player(songId))
+        }
+
+    val onMenuClick: (Long) -> Unit = { songId ->
+        onNavigate(NavScreen.Dialogs.SongMenu(songId))
+    }
+    val onBottomBarClick: () -> Unit = {
+        onNavigate(NavScreen.Player(-1))
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     val imageData = uiState.artist?.imageUriId ?: uiState.artist?.imageUrl ?: Any()
     DynamicThemeFromImage(
@@ -64,7 +77,7 @@ fun ArtistSongs(
             bottomAppBar = {
                 PlayerBottomAppBar(
                     playerViewModel = playerViewModel,
-                    onClick = {}
+                    onClick = onBottomBarClick
                 )
             },
             onPlayClick = {

@@ -60,16 +60,43 @@ import org.ghost.musify.viewModels.home.MusicViewModel
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: MusicViewModel,
-    playerViewModel: PlayerViewModel,
-    onCardClick: (Long, SongFilter) -> Unit = { _, _ -> },
-    onMenuClick: (Long) -> Unit = {},
-    onAlbumClick: (Long) -> Unit = {},
-    onArtistClick: (String) -> Unit = {},
-    onPlaylistClick: (Long) -> Unit = {},
-    onSearchClick: () -> Unit = {},
-    onNavigationItemClick: (NavScreen) -> Unit,
-    onBottomPlayerClick: () -> Unit,
+    playerViewModel: PlayerViewModel = hiltViewModel(),
+    onNavigate: (NavScreen) -> Unit,
 ) {
+    val onNavigationItemClick = onNavigate
+
+    val onAlbumClick: (Long) -> Unit = {
+        onNavigate(NavScreen.Songs.Album(it))
+    }
+
+    val onArtistClick: (String) -> Unit = {
+        onNavigate(NavScreen.Songs.Artist(it))
+    }
+
+    val onPlaylistClick: (Long) -> Unit = {
+        onNavigate(NavScreen.Songs.Playlist(it))
+    }
+    val onMenuClick: (Long) -> Unit = {
+        onNavigate(NavScreen.Dialogs.SongMenu(it))
+    }
+    val onBottomPlayerClick: () -> Unit = {
+        onNavigate(NavScreen.Player(-1L))
+    }
+    val onSearchClick: () -> Unit = {
+        onNavigate(NavScreen.Main.Search)
+    }
+
+    val onSongClick: (Long) -> Unit = {songId ->
+        playerViewModel.playSongFromFilter(
+            songId,
+            SongFilter(SongsCategory.AllSongs),
+            false,
+            0,
+        )
+        onNavigate(NavScreen.Player(songId))
+    }
+
+
     val pageState = rememberPagerState(initialPage = 0) { 5 }
     val tabs = listOf(
         Tab(
@@ -151,9 +178,7 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize(),
                             allSongs,
                             item = {},
-                            onSongClick = { songId ->
-                                onCardClick(songId, SongFilter(SongsCategory.AllSongs))
-                            },
+                            onSongClick = onSongClick,
                             onMenuClick = onMenuClick,
                         )
 
@@ -179,9 +204,7 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize(),
                             favoriteSongs,
                             item = {},
-                            onSongClick = { songId ->
-                                onCardClick(songId, SongFilter(SongsCategory.AllSongs))
-                            },
+                            onSongClick = onSongClick,
                             onMenuClick = onMenuClick,
                         )
                     }
@@ -249,8 +272,6 @@ fun SongsTab(
 
     ) {
     val listState = rememberLazyListState()
-    rememberCoroutineScope()
-
 
     LazyRow(
         modifier = modifier,
@@ -262,9 +283,6 @@ fun SongsTab(
                 selected = index == selectedIndex,
                 onClick = {
                     onClick(index)
-//                    coroutineScope.launch {
-//                        listState.animateScrollToItem(index)
-//                    }
                 },
                 label = {
                     Text(

@@ -1,4 +1,4 @@
-package org.ghost.musify.ui.screens
+package org.ghost.musify.ui.screens.player
 
 import android.net.Uri
 import android.os.Build
@@ -55,10 +55,10 @@ fun BottomPlayer(
     onPlayPauseClick: () -> Unit,
     onCloseCLick: () -> Unit,
 ) {
-    val songId = playerUiState.currentSong?.song?.id ?: 0L
-    val title = playerUiState.currentSong?.song?.title ?: ""
-    val artist = playerUiState.currentSong?.artist?.name ?: ""
-    val album = playerUiState.currentSong?.album?.title ?: ""
+    val songId = playerUiState.currentSong?.songDetail?.song?.id ?: 0L
+    val title = playerUiState.currentSong?.songDetail?.song?.title ?: ""
+    val artist = playerUiState.currentSong?.songDetail?.artist?.name ?: ""
+    val album = playerUiState.currentSong?.songDetail?.album?.title ?: ""
     val currentPosition = playerUiState.currentPosition
     val totalDuration = playerUiState.totalDuration
 

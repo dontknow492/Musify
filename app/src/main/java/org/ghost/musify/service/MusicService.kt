@@ -1,6 +1,7 @@
 package org.ghost.musify.service
 
 //import android.media.AudioAttributes
+import android.content.Intent
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -88,6 +89,26 @@ class MusicService : MediaSessionService() {
         super.onDestroy()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // Log that the method was called, this is crucial for debugging
+        Log.d("MusicService", "onTaskRemoved called.")
+
+        // A better check is 'playWhenReady'. It reflects the user's intent.
+        // 'isPlaying' can be false during buffering, but the user still expects it to play.
+        val isPlaying = exoPlayer.playWhenReady
+
+        Log.d("MusicService", "Is player supposed to be playing? $isPlaying")
+
+        if (!isPlaying) {
+            Log.d("MusicService", "Player is not playing, stopping service.")
+            stopSelf() // This will trigger onDestroy()
+        } else {
+            Log.d("MusicService", "Player is playing, service will continue.")
+        }
+
+        super.onTaskRemoved(rootIntent)
+    }
+
     @OptIn(UnstableApi::class)
     private fun observePlayerSettings() {
         data class PlayerConfig(
@@ -161,6 +182,7 @@ class MusicService : MediaSessionService() {
 
 
     private fun saveQueue() {
+        Log.d("MusicService", "Saving queue state.")
         // Don't save if there's nothing to save.
         if (exoPlayer.mediaItemCount == 0) return
 

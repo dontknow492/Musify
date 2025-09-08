@@ -51,6 +51,8 @@ import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.ui.components.CoverChangeableItem
 import org.ghost.musify.ui.components.MyBottomAppBar
 import org.ghost.musify.ui.components.SongItem
+import org.ghost.musify.ui.models.SongFilter
+import org.ghost.musify.ui.models.SongsCategory
 import org.ghost.musify.ui.navigation.NavScreen
 import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.SearchUiState
@@ -61,15 +63,43 @@ import org.ghost.musify.viewModels.SearchViewModel
 fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
-    playerViewModel: PlayerViewModel,
-    onSongClick: (Long, List<SongWithAlbumAndArtist>) -> Unit = { _, _ -> },
-    onMenuClick: (Long) -> Unit,
-    onAlbumClick: (Long) -> Unit,
-    onArtistClick: (String) -> Unit,
-    onPlaylistClick: (Long) -> Unit,
-    onNavigationItemClick: (NavScreen) -> Unit,
-    onBottomPlayerClick: () -> Unit,
+    playerViewModel: PlayerViewModel = hiltViewModel(),
+    onNavigate: (NavScreen) -> Unit,
 ) {
+
+    val onNavigationItemClick = onNavigate
+
+    val onBottomPlayerClick: () -> Unit = {
+        onNavigate(NavScreen.Player(-1L))
+    }
+
+
+    val onAlbumClick: (Long) -> Unit = {
+        onNavigate(NavScreen.Songs.Album(it))
+    }
+
+    val onArtistClick: (String) -> Unit = {
+        onNavigate(NavScreen.Songs.Artist(it))
+    }
+
+    val onPlaylistClick: (Long) -> Unit = {
+        onNavigate(NavScreen.Songs.Playlist(it))
+    }
+    val onMenuClick: (Long) -> Unit = {
+        onNavigate(NavScreen.Dialogs.SongMenu(it))
+    }
+
+    val onSongClick: (Long, List<SongWithAlbumAndArtist>) -> Unit = {songId, songs ->
+        playerViewModel.playSongFromList(
+            songId,
+            songs,
+            false,
+            0,
+        )
+        onNavigate(NavScreen.Player(songId))
+    }
+
+
     val uiState by viewModel.uiState.collectAsState()
 
     val focusRequester = remember { FocusRequester() }

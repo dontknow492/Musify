@@ -5,7 +5,7 @@ import org.ghost.musify.entity.FavoriteSongEntity
 
 data class SongDetailsWithLikeStatus(
     @Embedded
-    val song: SongWithAlbumAndArtist,
+    val songDetail: SongWithAlbumAndArtist,
 
     @Embedded
     val liked: FavoriteSongEntity?

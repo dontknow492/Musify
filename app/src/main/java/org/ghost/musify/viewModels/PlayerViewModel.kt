@@ -22,21 +22,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import org.ghost.musify.R
 import org.ghost.musify.entity.HistoryEntity
+import org.ghost.musify.entity.relation.SongDetailsWithLikeStatus
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
 import org.ghost.musify.repository.MediaControllerRepository
 import org.ghost.musify.repository.MusicRepository
 import org.ghost.musify.ui.models.SongFilter
 import org.ghost.musify.utils.mapSongToMediaItem
 import org.ghost.musify.utils.mapSongsToMediaItems
+//import org.ghost.musify.viewModels.QueueViewModel.Companion.TAG
 import javax.inject.Inject
 
 enum class PlayerStatus {
@@ -58,15 +62,13 @@ enum class PlayerRepeatMode(private val value: Int) {
 
 // The single, immutable state object for your player UI
 data class PlayerUiState(
-    val currentSong: SongWithAlbumAndArtist? = null,
-    val coverImage: ImageRequest,
+    val currentSong: SongDetailsWithLikeStatus? = null,
     val isPlaying: Boolean = false,
     val status: PlayerStatus = PlayerStatus.IDLE,
     val currentPosition: Long = 0L,
     val totalDuration: Long = 0L,
     val isShuffleEnabled: Boolean = false,
     val repeatMode: Int = Player.REPEAT_MODE_OFF,
-    val isFavorite: Boolean = false,
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
     val volume: Float = 1f,
@@ -81,6 +83,10 @@ class PlayerViewModel @Inject constructor(
 ) : ViewModel() {
     // region State Properties
 
+    companion object{
+        
+    }
+
     var playbackSpeeds = listOf(0.25f, 0.5f, 1f, 1.5f, 2f)
     private var mediaController: MediaController? = null
     private var progressUpdateJob: Job? = null
@@ -94,26 +100,63 @@ class PlayerViewModel @Inject constructor(
     private val MIN_PLAYBACK_DURATION_FOR_HISTORY_MS = 10000 // 10 seconds
 
     // A map for O(1) song lookups, more efficient than iterating the list.
-    private var songIdToSongMap: Map<Long, SongWithAlbumAndArtist> = emptyMap()
+
+    private val timelineSongIds = MutableStateFlow<List<Long>>(emptyList())
 
 
     // The single source of truth for the Player UI state.
-    private val _uiState = MutableStateFlow(
-        PlayerUiState(
-            coverImage = ImageRequest.Builder(context)
-                .data(null)
-                .build()
+    // The other parts of your UI state
+    private val _playerState = MutableStateFlow(PlayerUiState()) // Assume PlayerState holds isPlaying, duration, etc.
+
+    private val currentSongId: MutableStateFlow<Long?> = MutableStateFlow(null)
+
+    val currentSong: StateFlow<SongDetailsWithLikeStatus?> = currentSongId
+        .onEach { id -> Log.d("FlowDebug", "1. currentSongId emitted: $id") }
+        .flatMapLatest { songId ->
+            Log.d("PlayerViewModelCurrent", "currentSongId: $songId")
+            if (songId == null) {
+                flowOf(null) // Emit null if there's no song ID
+            } else {
+                musicRepository.getSongDetailsWithLikeStatusById(songId) // This returns a Flow
+            }
+        }.stateIn( // 3. Convert the resulting Flow into a StateFlow for the UI
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000), // Keep active for 5s after UI stops listening
+            initialValue = null // Initial value before the first ID is emitted
         )
+
+    val uiState = combine(
+        _playerState,
+        currentSong
+    ){
+        playerState, currentSong ->
+        playerState.copy(
+            currentSong = currentSong,
+            isPlaying = playerState.isPlaying,
+            status = playerState.status,
+            totalDuration = playerState.totalDuration,
+            currentPosition = playerState.currentPosition,
+            hasNext = playerState.hasNext,
+            hasPrevious = playerState.hasPrevious,
+            isShuffleEnabled = playerState.isShuffleEnabled,
+            repeatMode = playerState.repeatMode,
+            volume = playerState.volume,
+            playbackSpeed = playerState.playbackSpeed
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = PlayerUiState() // Initial empty state
     )
-    val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
 
-    // The playback queue, exposed separately for UI components that show the list.
-    private val _playbackQueue = MutableStateFlow<List<SongWithAlbumAndArtist>>(emptyList())
-    val playbackQueue: StateFlow<List<SongWithAlbumAndArtist>> = _playbackQueue.asStateFlow()
+
+
     // endregion
 
     var playerListener: Player.Listener = object : Player.Listener {
+
+
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             super.onMediaItemTransition(mediaItem, reason)
@@ -122,6 +165,11 @@ class PlayerViewModel @Inject constructor(
                 currentMediaIdForHistory = newMediaIdAsLong
                 playbackStartTimeMs = System.currentTimeMillis()
             }
+
+            Log.d(
+                "PlayerViewModelCurrent",
+                "Media item transition: ${mediaItem?.mediaId}, reason: $reason, currentSong: ${currentSongId.value}"
+            )
 
 
             updateStateFromController()
@@ -147,10 +195,6 @@ class PlayerViewModel @Inject constructor(
             if (isPlaying) startProgressUpdater() else stopProgressUpdater()
         }
 
-        override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-            updatePlaybackQueue(timeline)
-        }
-
         override fun onVolumeChanged(volume: Float) {
             updateStateFromController()
         }
@@ -162,6 +206,22 @@ class PlayerViewModel @Inject constructor(
         override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
             updateStateFromController()
         }
+
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int
+        ) {
+            super.onPositionDiscontinuity(oldPosition, newPosition, reason)
+            // Check if the reason for the jump was a user seek
+            if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                Log.d("MusicService", "✅ Seek finished! New position is ${newPosition.positionMs} ms")
+                // You can update your UI state from here
+                updateStateFromController()
+                // For example, hide a loading spinner
+            }
+        }
+
 
 
         override fun onPlayerError(error: PlaybackException) {
@@ -178,78 +238,41 @@ class PlayerViewModel @Inject constructor(
             mediaController?.addListener(playerListener)
             isControllerReady.value = true
 
-
+            mediaController?.let { controller ->
+                currentSongId.value = controller.currentMediaItem?.mediaId?.toLongOrNull()
+                updateStateFromController()
+                if(controller.isPlaying) startProgressUpdater()
+            }
         }
     }
 
-    private val _isPlaying = MutableStateFlow(false)
-    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
-
-    private val _status = MutableStateFlow(PlayerStatus.IDLE)
-
-    private val _repeatMode = MutableStateFlow(PlayerRepeatMode.OFF)
-
-    private val _isShuffleEnabled = MutableStateFlow(false)
 
 
-    private val _currentSong = MutableStateFlow<SongWithAlbumAndArtist?>(null)
-    val currentSong = _currentSong.asStateFlow()
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val isFavorite: StateFlow<Boolean> = _currentSong.flatMapLatest { song ->
-        // 1. Use flatMapLatest to switch to a new flow when the song changes.
-        Log.d("PlayerViewModel", "isFavorite: ${song?.song?.title}")
-        if (song == null) {
-            // 2. If there's no song, the favorite status is false.
-            flowOf(false)
-        } else {
-            // 3. If there is a song, get its favorite status flow from the repository.
-            musicRepository.isSongFavorite(song.song.id)
-        }
-    }.stateIn(
-        // 4. Convert the resulting Flow into a StateFlow for the UI to collect.
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
-
-
-    override fun onCleared() {
-        stopProgressUpdater()
-        mediaController?.removeListener(playerListener)
-        super.onCleared()
-    }
 
 
     private fun updateStateFromController() {
         val controller = mediaController ?: return
         val songId = controller.currentMediaItem?.mediaId?.toLongOrNull()
 
-        val currentSong = songId?.let { songIdToSongMap[it] }
-        _currentSong.value = currentSong
+        currentSongId.update {
+            songId
+        }
 
-        _uiState.update { currentState ->
+        _playerState.update { currentState ->
             currentState.copy(
                 isPlaying = controller.isPlaying,
                 status = mapPlaybackStateToStatus(controller.playbackState),
-                currentSong = currentSong,
                 isShuffleEnabled = controller.shuffleModeEnabled,
                 repeatMode = controller.repeatMode,
                 totalDuration = controller.duration.coerceAtLeast(0L),
                 hasNext = controller.hasNextMediaItem(),
                 hasPrevious = controller.hasPreviousMediaItem(),
                 volume = controller.volume,
-                isFavorite = isFavorite.value,
                 playbackSpeed = controller.playbackParameters.speed,
-                coverImage = ImageRequest.Builder(context)
-                    .data(
-                        null
-                    )
-                    .error(R.drawable.music_album_cover)
-                    .build()
+                currentPosition = controller.currentPosition,
             )
         }
-        Log.d("PlayerViewModel", "State updated: ${_uiState.value}")
+        Log.d("PlayerViewModel", "State updated: ${_playerState.value}")
     }
 
     private fun startProgressUpdater() {
@@ -259,7 +282,7 @@ class PlayerViewModel @Inject constructor(
             while (true) {
                 val currentPosition = mediaController?.currentPosition ?: 0L
                 playedSongTimeMs += 1000L
-                _uiState.update { it.copy(currentPosition = currentPosition) }
+                _playerState.update { it.copy(currentPosition = currentPosition) }
                 delay(1000L)
                 Log.d("PlayerViewModel", "Progress updated: $currentPosition")
             }
@@ -278,7 +301,6 @@ class PlayerViewModel @Inject constructor(
         isShuffled: Boolean = false,
         repeatMode: Int = Player.REPEAT_MODE_OFF
     ) {
-//        if(_playbackQueue.value.isNotEmpty()) return
         viewModelScope.launch {
             val controller = waitForController() ?: run {
                 Log.e("PlayerViewModel", "Play command failed: Controller not available.")
@@ -324,7 +346,6 @@ class PlayerViewModel @Inject constructor(
         isShuffled: Boolean = false,
         repeatMode: Int = Player.REPEAT_MODE_OFF
     ) {
-        songIdToSongMap = songs.associateBy { it.song.id }
 
         val startIndex = songs.indexOfFirst { it.song.id == songId }.takeIf { it != -1 } ?: 0
         val mediaItems = mapSongsToMediaItems(songs)
@@ -344,9 +365,6 @@ class PlayerViewModel @Inject constructor(
                 Log.e("PlayerViewModel", "Append command failed: Controller not available.")
                 return@launch
             }
-
-            // Add the new song to our source-of-truth map
-            songIdToSongMap += (song.song.id to song)
 
             val mediaItem = mapSongToMediaItem(song)
 
@@ -372,9 +390,6 @@ class PlayerViewModel @Inject constructor(
                 return@launch
             }
 
-            // Add all new songs to our source-of-truth map
-            songIdToSongMap += songs.associateBy { it.song.id }
-
             val mediaItems = mapSongsToMediaItems(songs)
 
             if (index == -1 || index >= controller.mediaItemCount) {
@@ -385,36 +400,6 @@ class PlayerViewModel @Inject constructor(
                 // Add at a specific position
                 controller.addMediaItems(index, mediaItems)
                 Log.d("PlayerViewModel", "Inserted ${songs.size} songs at index $index.")
-            }
-        }
-    }
-
-    /**
-     * Removes a song from the playback queue at a specific index.
-     */
-    fun removeSongFromQueue(index: Int) {
-        viewModelScope.launch {
-            val controller = waitForController() ?: run {
-                Log.e("PlayerViewModel", "Remove command failed: Controller not available.")
-                return@launch
-            }
-
-            if (index < 0 || index >= controller.mediaItemCount) {
-                Log.w("PlayerViewModel", "Cannot remove song: Invalid index $index.")
-                return@launch
-            }
-
-            // Get the song ID from the media item before removing it
-            val mediaId = controller.getMediaItemAt(index).mediaId
-            val songId = mediaId.toLongOrNull()
-
-            // Remove the item from the player's queue
-            controller.removeMediaItem(index)
-            Log.d("PlayerViewModel", "Removed song at index $index from queue.")
-
-            // Also remove it from our local map to maintain consistency
-            if (songId != null) {
-                songIdToSongMap = songIdToSongMap - songId
             }
         }
     }
@@ -441,10 +426,6 @@ class PlayerViewModel @Inject constructor(
             if (itemIndexToRemove != -1) {
                 // Remove the item from the player's queue.
                 controller.removeMediaItem(itemIndexToRemove)
-
-                // Also remove it from our local map to maintain consistency.
-                songIdToSongMap = songIdToSongMap - songId
-
                 Log.d(
                     "PlayerViewModel",
                     "Removed song with ID $songId at index $itemIndexToRemove from queue."
@@ -527,20 +508,6 @@ class PlayerViewModel @Inject constructor(
         controller.repeatMode = nextRepeatMode
     }
 
-    fun toggleFavorite() {
-        Log.d("PlayerViewModel", "toggleFavorite: ${_uiState.value.currentSong}")
-        viewModelScope.launch {
-            val song = _uiState.value.currentSong ?: return@launch
-            val isCurrentlyFavorite = isFavorite.value
-
-            when (isCurrentlyFavorite) {
-                true -> musicRepository.removeFromFavorites(song.song.id)
-                false -> musicRepository.addToFavorites(song.song.id)
-            }
-            Log.d("PlayerViewModel", "toggleFavorite: ${isFavorite.value}")
-//            isFavorite.value = !isCurrentlyFavorite
-        }
-    }
 
     /**
      * Sets the player's volume.
@@ -561,19 +528,7 @@ class PlayerViewModel @Inject constructor(
     }
 
 
-    private fun updatePlaybackQueue(timeline: Timeline) {
-        if (timeline.isEmpty || songIdToSongMap.isEmpty()) {
-            _playbackQueue.value = emptyList()
-            return
-        }
 
-        val newQueue = (0 until timeline.windowCount).mapNotNull { index ->
-            val window = timeline.getWindow(index, Timeline.Window())
-            val mediaId = window.mediaItem.mediaId.toLongOrNull()
-            mediaId?.let { songIdToSongMap[it] }
-        }
-        _playbackQueue.value = newQueue
-    }
 
     private suspend fun waitForController(): MediaController? {
         if (mediaController != null) return mediaController
@@ -597,17 +552,15 @@ class PlayerViewModel @Inject constructor(
     private fun logCurrentSongToHistory() {
         // Check if we were tracking a song
         currentMediaIdForHistory?.let { mediaId ->
-
             // Only add to history if it was played for a meaningful duration
             if (playedSongTimeMs > MIN_PLAYBACK_DURATION_FOR_HISTORY_MS) {
-                val historyEntity = HistoryEntity(
-                    songId = mediaId,
-                    playedAt = playbackStartTimeMs,
-                    durationPlayed = playedSongTimeMs,
-                    wasFavorite = isFavorite.value
-
-                )
                 viewModelScope.launch {
+                    val historyEntity = HistoryEntity(
+                        songId = mediaId,
+                        playedAt = playbackStartTimeMs,
+                        durationPlayed = playedSongTimeMs,
+                        wasFavorite = musicRepository.isSongFavorite(mediaId).first()
+                        )
                     musicRepository.addToHistory(historyEntity)
                     Log.d(
                         "PlayerViewModel",
@@ -624,6 +577,12 @@ class PlayerViewModel @Inject constructor(
 
     private fun resetPlayedSongTimeMs(){
         playedSongTimeMs = 0L
+    }
+
+    override fun onCleared() {
+        stopProgressUpdater()
+        mediaController?.removeListener(playerListener)
+        super.onCleared()
     }
 
 

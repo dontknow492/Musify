@@ -80,11 +80,17 @@ import java.time.format.FormatStyle
 fun HistoryScreen(
     modifier: Modifier = Modifier,
     viewModel: HistoryViewModel = hiltViewModel(),
-    playerViewModel: PlayerViewModel,
+    playerViewModel: PlayerViewModel = hiltViewModel(),
+    onNavigate: (NavScreen) -> Unit,
     onSongClick: (Long) -> Unit,
-    onNavigationItemClick: (NavScreen) -> Unit,
-    onBottomPlayerClick: () -> Unit,
 ) {
+
+    val onNavigationItemClick = onNavigate
+
+    val onBottomPlayerClick: () -> Unit = {
+        onNavigate(NavScreen.Player(-1L))
+    }
+
     val MILLIS_IN_A_DAY = 86_400_000L
     val historyItems = viewModel.playbackHistory.collectAsLazyPagingItems()
     val uiState by viewModel.uiState.collectAsState()

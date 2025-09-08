@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import coil3.imageLoader
 import coil3.request.CachePolicy
@@ -30,6 +31,10 @@ import com.materialkolor.score.Score
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+private val MaterialTheme.isDark: Boolean
+    @Composable
+    get() = colorScheme.surface.luminance() < 0.5f
+
 
 /**
  * The final, robust composable for applying a dynamic theme from an image.
@@ -41,7 +46,7 @@ fun DynamicThemeFromImage(
     content: @Composable () -> Unit
 ) {
 
-    val isDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = MaterialTheme.isDark
     val defaultColorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
 
     // 1. State to hold our extracted seed color and loading status.

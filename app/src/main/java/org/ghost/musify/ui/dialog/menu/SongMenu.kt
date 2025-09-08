@@ -81,7 +81,7 @@ fun SongMenu(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
                         Text(
-                            text = songDetails.song.song.title,
+                            text = songDetails.songDetail.song.title,
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.weight(1f),
                             overflow = TextOverflow.Ellipsis,
@@ -143,7 +143,7 @@ fun SongMenu(
                             },
                             title = "Add to playlist",
                             onClick = {
-                                onAddToPlaylist(songDetails.song.song.id)
+                                onAddToPlaylist(songDetails.songDetail.song.id)
                             }
                         )
                         HorizontalDivider()
@@ -172,7 +172,7 @@ fun SongMenu(
             }
             if (isDetailScreenVisible) {
                 MusicInfoDialog(
-                    songWithAlbumAndArtist = songDetails.song,
+                    songWithAlbumAndArtist = songDetails.songDetail,
                     onDismissRequest = {
                         isDetailScreenVisible = false
                         onDismissRequest()

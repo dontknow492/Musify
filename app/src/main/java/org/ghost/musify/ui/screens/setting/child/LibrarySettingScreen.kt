@@ -1,11 +1,16 @@
 package org.ghost.musify.ui.screens.setting.child
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -23,6 +28,26 @@ fun LibrarySettingScreen(
     onBackClick: () -> Unit,
 ) {
     val uiState by viewModel.settingsState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                // 2. Take persistent permissions to access the folder later
+                val contentResolver = context.contentResolver
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                contentResolver.takePersistableUriPermission(it, takeFlags)
+
+                uri.path?.let{path ->
+
+                    viewModel.addMusicFolder(path.split(":")[1])
+                }
+            }
+        }
+    )
+
     SettingChildScreen(
         modifier = modifier,
         title = "Library & Metadata",
@@ -35,9 +60,11 @@ fun LibrarySettingScreen(
                 SettingsEditableListItem(
                     title = "Music folders",
                     description = "folder to scan for musics",
-                    items = listOf("Music", "Music2"),
-                    onAddClick = {},
-                    onItemDeleted = { },
+                    items = uiState.musicFolders.toList(),
+                    onAddClick = {folderPickerLauncher.launch(null)},
+                    onItemDeleted = {
+                        viewModel.removeMusicFolder(it)
+                    },
                     searchQuery = "",
                 )
             }

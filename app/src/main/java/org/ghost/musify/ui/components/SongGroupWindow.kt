@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
@@ -59,6 +60,9 @@ fun SongGroupWindow(
     onBackClick: () -> Unit,
     bottomSheetContent: @Composable (ColumnScope.() -> Unit) = {}
 ) {
+
+    val songsCount = data.songs.itemCount
+
     var isBottomSheetVisible by remember { mutableStateOf(false) }
 
     val data = data.copy(
@@ -68,15 +72,18 @@ fun SongGroupWindow(
     Scaffold(
         modifier = modifier,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onPlayClick,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(34.dp)
-                )
+            if(songsCount > 0){
+                FloatingActionButton(
+                    onClick = onPlayClick,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
             }
+
         },
         bottomBar = bottomAppBar,
     ) { innerPadding ->
@@ -93,6 +100,13 @@ fun SongGroupWindow(
                 )
                 .padding(innerPadding)
         ) {
+            val headingInfo = SongGroupHeadingInfo(
+                title = data.title,
+                body = data.body,
+                image = data.image,
+                count = data.count,
+                type = data.type,
+            )
             SearchableAppBar(
                 onBackClick = onBackClick,
                 onSearchChange = onSearchChange,
@@ -104,6 +118,7 @@ fun SongGroupWindow(
                 item = {
                     Heading(
                         modifier = Modifier,
+                        headingInfo = headingInfo,
                         title = data.title,
                         body = data.body,
                         image = data.image,
@@ -128,10 +143,18 @@ fun SongGroupWindow(
 
 }
 
+data class SongGroupHeadingInfo(
+    val title: String,
+    val body: String,
+    val image: ImageRequest,
+    val count: Int,
+    val type: String,
+)
 
 @Composable
 fun Heading(
     modifier: Modifier = Modifier,
+    headingInfo: SongGroupHeadingInfo,
     title: String,
     body: String,
     image: ImageRequest,
@@ -152,21 +175,9 @@ fun Heading(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (width > 600.dp) {
-                HeadingLandscape(
-                    title = title,
-                    body = body,
-                    image = image,
-                    count = count,
-                    type = type
-                )
+                HeadingLandscape(headingInfo = headingInfo)
             } else {
-                HeadingPortrait(
-                    title = title,
-                    body = body,
-                    image = image,
-                    count = count,
-                    type = type
-                )
+                HeadingPortrait(headingInfo = headingInfo)
             }
 
             Row(
@@ -202,17 +213,13 @@ fun Heading(
 @Composable
 fun HeadingPortrait(
     modifier: Modifier = Modifier,
-    title: String,
-    body: String,
-    image: ImageRequest,
-    count: Int = 0,
-    type: String = "musics",
+    headingInfo: SongGroupHeadingInfo,
 ) {
     Column(
         modifier = modifier
     ) {
         AsyncImage(
-            model = image,
+            model = headingInfo.image,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
@@ -221,20 +228,20 @@ fun HeadingPortrait(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = title,
+            text = headingInfo.title,
             style = MaterialTheme.typography.headlineMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = body,
+            text = headingInfo.body,
             style = MaterialTheme.typography.titleMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = "$count $type",
+            text = "${headingInfo.count} ${headingInfo.type}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -247,11 +254,7 @@ fun HeadingPortrait(
 @Composable
 fun HeadingLandscape(
     modifier: Modifier = Modifier,
-    title: String,
-    body: String,
-    image: ImageRequest,
-    count: Int = 0,
-    type: String = "musics",
+    headingInfo: SongGroupHeadingInfo,
 ) {
     Row(
         modifier = modifier,
@@ -259,7 +262,7 @@ fun HeadingLandscape(
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = image,
+            model = headingInfo.image,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth(0.5f)
@@ -270,20 +273,20 @@ fun HeadingLandscape(
 
         Column {
             Text(
-                text = title,
+                text = headingInfo.title,
                 style = MaterialTheme.typography.headlineMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = body,
+                text = headingInfo.body,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "$count $type",
+                text = "${headingInfo.count} ${headingInfo.type}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

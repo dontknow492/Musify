@@ -1,9 +1,14 @@
 package org.ghost.musify.viewModels
 
+import android.content.Context
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +23,10 @@ import org.ghost.musify.enums.Theme
 import org.ghost.musify.repository.SettingsRepository
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(private val repository: SettingsRepository) : ViewModel() {
+class SettingsViewModel @Inject constructor(
+    private val repository: SettingsRepository,
+    @param: ApplicationContext private val context: Context,
+) : ViewModel() {
 
     // Expose the settings as a StateFlow for the UI to observe.
     // It will automatically update when the DataStore changes.
@@ -28,6 +36,8 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
             started = SharingStarted.WhileSubscribed(5000), // Stay active for 5s after UI stops observing
             initialValue = AppSettings() // Start with default values
         )
+
+
 
     // --- Public Functions for UI to Call ---
 
@@ -106,6 +116,22 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
         }
     }
 
+    fun addMusicFolder(folder: String){
+        viewModelScope.launch {
+            val musicFolders = settingsState.value.musicFolders.toMutableSet()
+            musicFolders.add(folder)
+            repository.updateMusicFolders(musicFolders)
+        }
+    }
+
+    fun removeMusicFolder(folder: String){
+        viewModelScope.launch {
+            val musicFolders = settingsState.value.musicFolders.toMutableSet()
+            musicFolders.remove(folder)
+            repository.updateMusicFolders(musicFolders)
+        }
+    }
+
     fun setAutomaticScanning(enabled: Boolean) {
         viewModelScope.launch {
             repository.updateAutomaticScanning(enabled)
@@ -174,16 +200,53 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
         }
     }
 
+    fun addExcludedFolder(folder: String){
+        viewModelScope.launch {
+            val excludedFolders = settingsState.value.excludedFolders.toMutableSet()
+            excludedFolders.add(folder)
+            repository.updateExcludedFolders(excludedFolders)
+        }
+    }
+
+    fun removeExcludedFolder(folder: String) {
+        viewModelScope.launch {
+            val excludedFolders = settingsState.value.excludedFolders.toMutableSet()
+            excludedFolders.remove(folder)
+            repository.updateExcludedFolders(excludedFolders)
+        }
+    }
+
+    fun backupSettings(destinationUri: Uri) {
+        viewModelScope.launch {
+            val success = repository.backupSettings(destinationUri)
+            when(success){
+                true -> Toast.makeText(context, "Settings backed up", Toast.LENGTH_SHORT).show()
+                false -> Toast.makeText(context, "Settings backup failed", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun restoreSettings(sourceUri: Uri) {
+        viewModelScope.launch {
+            val success = repository.restoreSettings(sourceUri)
+            when(success){
+                true -> Toast.makeText(context, "Settings restored(restart required)", Toast.LENGTH_SHORT).show()
+                false -> Toast.makeText(context, "Settings restore failed", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+
 
     // --- ViewModel Factory (for manual dependency injection if not using Hilt/Koin) ---
 
     companion object {
-        fun provideFactory(repository: SettingsRepository): ViewModelProvider.Factory {
+        fun provideFactory(repository: SettingsRepository, context: Context): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-                        return SettingsViewModel(repository) as T
+                        return SettingsViewModel(repository, context) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class")
                 }

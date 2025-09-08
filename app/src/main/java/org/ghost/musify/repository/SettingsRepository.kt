@@ -1,13 +1,17 @@
 package org.ghost.musify.repository
 
 import android.content.Context
+import android.net.Uri
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.ghost.musify.data.AppSettings
 import org.ghost.musify.data.SettingsKeys
 import org.ghost.musify.enums.AudioFocus
@@ -15,11 +19,14 @@ import org.ghost.musify.enums.HeadsetPlugAction
 import org.ghost.musify.enums.NotificationStyle
 import org.ghost.musify.enums.StartScreen
 import org.ghost.musify.enums.Theme
+import java.io.File
 import javax.inject.Inject
 
 
 // Create a DataStore instance using a property delegate
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
+
+private const val DATASTORE_FILE_NAME = "app_settings.preferences_pb"
 
 class SettingsRepository @Inject constructor(@param: ApplicationContext private val context: Context) {
 
@@ -129,6 +136,75 @@ class SettingsRepository @Inject constructor(@param: ApplicationContext private 
     suspend fun updateExcludedFolders(folders: Set<String>) {
         dataStore.edit { it[SettingsKeys.EXCLUDED_FOLDERS] = folders }
     }
+
+
+    /**
+     * Backs up the DataStore preferences file to a user-specified location.
+     *
+     * @param destinationUri The content URI of the destination file, obtained from the SAF file picker.
+     * @return `true` if the backup was successful, `false` otherwise.
+     */
+    suspend fun backupSettings(destinationUri: Uri): Boolean {
+        // File I/O should be on the IO dispatcher
+        return withContext(Dispatchers.IO) {
+            try {
+                val dataStoreFile = getDataStoreFile()
+                if (!dataStoreFile.exists()) {
+                    // The file doesn't exist, nothing to back up.
+                    return@withContext false
+                }
+
+                // Use ContentResolver to open an output stream to the user's chosen file.
+                context.contentResolver.openOutputStream(destinationUri)?.use { outputStream ->
+                    dataStoreFile.inputStream().use { inputStream ->
+                        // Copy the contents from our internal file to the destination.
+                        inputStream.copyTo(outputStream)
+                    }
+                } ?: return@withContext false // openOutputStream can return null
+
+                true // Indicate success
+            } catch (e: Exception) {
+                // Log the exception in a real app
+                Log.e("SettingsRepository", "Error backing settings", e)
+                false // Indicate failure
+            }
+        }
+    }
+
+    /**
+     * Restores settings by overwriting the internal DataStore file with a user-picked backup.
+     *
+     * @param sourceUri The content URI of the backup file, obtained from the SAF file picker.
+     * @return `true` if the restore was successful, `false` otherwise.
+     */
+    suspend fun restoreSettings(sourceUri: Uri): Boolean {
+        // File I/O should be on the IO dispatcher
+        return withContext(Dispatchers.IO) {
+            try {
+                val dataStoreFile = getDataStoreFile()
+
+                // Use ContentResolver to open an input stream from the user's backup file.
+                context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
+                    dataStoreFile.outputStream().use { outputStream ->
+                        // Copy the contents from the backup to our internal file.
+                        inputStream.copyTo(outputStream)
+                    }
+                } ?: return@withContext false // openInputStream can return null
+
+                true // Indicate success
+            } catch (e: Exception) {
+                // Log the exception
+                Log.e("SettingsRepository", "Error restoring settings", e)
+                false // Indicate failure
+            }
+        }
+    }
+
+
+    private fun getDataStoreFile(): File {
+        return context.filesDir.resolve("datastore/$DATASTORE_FILE_NAME")
+    }
+
 
     // --- Private Mapper ---
 

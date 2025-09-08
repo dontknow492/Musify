@@ -21,10 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import org.ghost.musify.R
 import org.ghost.musify.data.BottomNavigationData
 import org.ghost.musify.ui.navigation.NavScreen
-import org.ghost.musify.ui.screens.BottomPlayer
+import org.ghost.musify.ui.screens.player.BottomPlayer
 import org.ghost.musify.viewModels.PlayerViewModel
 
 @Composable
@@ -64,7 +65,7 @@ fun AppNavigationBar(
 @Composable
 fun MyBottomAppBar(
     modifier: Modifier = Modifier,
-    playerViewModel: PlayerViewModel,
+    playerViewModel: PlayerViewModel = hiltViewModel(),
     currentScreen: NavScreen,
     onPlayerClick: () -> Unit = {},
     onNavigationItemClick: (NavScreen) -> Unit = {}
@@ -105,7 +106,7 @@ fun MyBottomAppBar(
 @Composable
 fun PlayerBottomAppBar(
     modifier: Modifier = Modifier,
-    playerViewModel: PlayerViewModel,
+    playerViewModel: PlayerViewModel = hiltViewModel(),
     onClick: () -> Unit,
 ) {
     val uiState by playerViewModel.uiState.collectAsState()

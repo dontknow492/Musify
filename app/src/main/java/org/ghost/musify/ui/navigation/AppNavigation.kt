@@ -7,7 +7,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -15,20 +14,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import org.ghost.musify.entity.relation.SongWithAlbumAndArtist
-import org.ghost.musify.enums.StartScreen
 import org.ghost.musify.ui.dialog.AddToPlaylistDialog
 import org.ghost.musify.ui.dialog.menu.SongMenu
 import org.ghost.musify.ui.models.SongFilter
 import org.ghost.musify.ui.screens.HistoryScreen
 import org.ghost.musify.ui.screens.HomeScreen
-import org.ghost.musify.ui.screens.PlayerWindow
+import org.ghost.musify.ui.screens.player.PlayerWindow
 import org.ghost.musify.ui.screens.SearchScreen
 import org.ghost.musify.ui.screens.onboarding.OnboardingScreen
 import org.ghost.musify.ui.screens.setting.SettingsScreen
@@ -45,7 +42,6 @@ import org.ghost.musify.viewModels.MainUiState
 import org.ghost.musify.viewModels.MainViewModel
 import org.ghost.musify.viewModels.PlayerViewModel
 import org.ghost.musify.viewModels.SearchViewModel
-import org.ghost.musify.viewModels.SettingsViewModel
 import org.ghost.musify.viewModels.home.MusicViewModel
 
 const val TAG = "NavigationHandler"
@@ -58,11 +54,10 @@ fun AppNavigation(
     navController: NavHostController,
     startDestination: NavScreen = NavScreen.Main.Home,
     viewModel: MainViewModel,
-    playerViewModel: PlayerViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-
+    val playerViewModel: PlayerViewModel = hiltViewModel()
 
 
     var hasNavigatedFromSplash by rememberSaveable { mutableStateOf(false) }
@@ -96,30 +91,11 @@ fun AppNavigation(
     val musicViewModel: MusicViewModel = hiltViewModel()
     val historyViewModel: HistoryViewModel = hiltViewModel()
 
-
-    val playSong: (Long, SongFilter) -> Unit = { songId, filter ->
-        Log.d(TAG, "playSong: Playing song with ID $songId from filter: $filter")
-        playerViewModel.playSongFromFilter(songId, filter)
-        navController.navigate(NavScreen.Player(songId))
-    }
-    val playSongExtra: (Long, SongFilter, Boolean, Int) -> Unit =
-        { songId, filter, shuffle, repeatMode ->
-            Log.d(TAG, "playSong: Playing song with ID $songId from filter: $filter")
-            playerViewModel.playSongFromFilter(songId, filter, shuffle, repeatMode)
-            navController.navigate(NavScreen.Player(songId))
-        }
-
-
-    val playSongList: (Long, List<SongWithAlbumAndArtist>) -> Unit = { songId, songs ->
-        Log.d(TAG, "playSongList: Playing song list with ID $songId from songs: $songs")
-        playerViewModel.playSongFromList(songId, songs)
-        navController.navigate(NavScreen.Player(songId))
+    val onNavigate: (NavScreen) -> Unit = { screen ->
+        Log.d(TAG, "onNavigate: Navigating to $screen")
+        navController.navigate(screen)
     }
 
-    val onMenuClick: (Long) -> Unit = { songId ->
-        Log.d(TAG, "onMenuClick: Opening song menu for song ID $songId")
-        navController.navigate(NavScreen.Dialogs.SongMenu(songId))
-    }
 
     val onAddToPlaylist: (Long) -> Unit = { songId ->
         Log.d(TAG, "onAddToPlaylist: Navigating to add song ID $songId to a playlist")
@@ -128,18 +104,6 @@ fun AppNavigation(
         )
     }
 
-    val onAlbumClick: (Long) -> Unit = { albumId ->
-        Log.d(TAG, "onAlbumClick: Navigating to album with ID $albumId")
-        navController.navigate(NavScreen.Songs.Album(albumId))
-    }
-    val onArtistClick: (String) -> Unit = { artistName ->
-        Log.d(TAG, "onArtistClick: Navigating to artist: $artistName")
-        navController.navigate(NavScreen.Songs.Artist(artistName))
-    }
-    val onPlaylistClick: (Long) -> Unit = { playlistId ->
-        Log.d(TAG, "onPlaylistClick: Navigating to playlist with ID $playlistId")
-        navController.navigate(NavScreen.Songs.Playlist(playlistId))
-    }
 
     val onBackClick: () -> Unit = {
         Log.d(
@@ -170,25 +134,18 @@ fun AppNavigation(
             }
 
             mainScreenNavigation(
-                navController = navController,
                 modifier = modifier,
-                playerViewModel = playerViewModel,
+                onNavigate = onNavigate,
                 musicViewModel = musicViewModel,
                 searchViewModel = searchViewModel,
                 historyViewModel = historyViewModel,
-                playSong = playSong,
-                playSongList = playSongList,
-                onMenuClick = onMenuClick,
-                onAlbumClick = onAlbumClick,
-                onArtistClick = onArtistClick,
-                onPlaylistClick = onPlaylistClick,
+                playerViewModel = playerViewModel,
             )
 
             songsNavigation(
-                playerViewModel = playerViewModel,
-                onMenuClick = onMenuClick,
+                onNavigate = onNavigate,
                 onBackClick = onBackClick,
-                playSongExtra = playSongExtra
+                playerViewModel = playerViewModel,
             )
 
             composable<NavScreen.Player> {
@@ -235,53 +192,26 @@ fun AppNavigation(
 
 @RequiresApi(Build.VERSION_CODES.Q)
 private fun NavGraphBuilder.mainScreenNavigation(
-    navController: NavHostController,
     modifier: Modifier = Modifier,
+    onNavigate: (NavScreen) -> Unit,
     playerViewModel: PlayerViewModel,
     musicViewModel: MusicViewModel,
     searchViewModel: SearchViewModel,
     historyViewModel: HistoryViewModel,
-    playSong: (Long, SongFilter) -> Unit = { _, _ -> },
-    playSongList: (Long, List<SongWithAlbumAndArtist>) -> Unit = { _, _ -> },
-    onMenuClick: (Long) -> Unit = {},
-    onAlbumClick: (Long) -> Unit = {},
-    onArtistClick: (String) -> Unit = {},
-    onPlaylistClick: (Long) -> Unit = {},
 ) {
-    val onNavigationItemClick = { screen: NavScreen ->
-        navController.navigate(screen)
-    }
-
-    val onBottomPlayerClick = {
-        navController.navigate(NavScreen.Player())
-    }
 
     composable<NavScreen.Main.Home> {
-
         HomeScreen(
             viewModel = musicViewModel,
             playerViewModel = playerViewModel,
-            onCardClick = playSong,
-            onMenuClick = onMenuClick,
-            onAlbumClick = onAlbumClick,
-            onArtistClick = onArtistClick,
-            onPlaylistClick = onPlaylistClick,
-            onSearchClick = { navController.navigate(NavScreen.Main.Search) },
-            onNavigationItemClick = onNavigationItemClick,
-            onBottomPlayerClick = onBottomPlayerClick,
+            onNavigate = onNavigate,
         )
     }
     composable<NavScreen.Main.Search> {
         SearchScreen(
             viewModel = searchViewModel,
             playerViewModel = playerViewModel,
-            onSongClick = playSongList,
-            onMenuClick = onMenuClick,
-            onAlbumClick = onAlbumClick,
-            onArtistClick = onArtistClick,
-            onPlaylistClick = onPlaylistClick,
-            onNavigationItemClick = onNavigationItemClick,
-            onBottomPlayerClick = onBottomPlayerClick,
+            onNavigate = onNavigate,
         )
 //                    currentScreen = _root_ide_package_.org.ghost.musify.ui.navigation.NavScreen.Main.Search
     }
@@ -290,18 +220,15 @@ private fun NavGraphBuilder.mainScreenNavigation(
         HistoryScreen(
             viewModel = historyViewModel,
             playerViewModel = playerViewModel,
+            onNavigate = onNavigate,
             onSongClick = {},
-            onNavigationItemClick = onNavigationItemClick,
-            onBottomPlayerClick = onBottomPlayerClick,
         )
     }
     composable<NavScreen.Settings.Main> {
         SettingsScreen(
             modifier = modifier,
+            onNavigate = onNavigate,
             playerViewModel = playerViewModel,
-            navController = navController,
-            onNavigationItemClick = onNavigationItemClick,
-            onBottomPlayerClick = onBottomPlayerClick,
         )
     }
 
@@ -312,32 +239,28 @@ private fun NavGraphBuilder.mainScreenNavigation(
 private fun NavGraphBuilder.songsNavigation(
 //    navController: NavHostController,
     playerViewModel: PlayerViewModel,
-    onBackClick: () -> Unit = {},
-    onMenuClick: (Long) -> Unit = {},
-    playSongExtra: (Long, SongFilter, Boolean, Int) -> Unit = { _, _, _, _ -> }
+    onBackClick: () -> Unit,
+    onNavigate: (NavScreen) -> Unit,
 ) {
     composable<NavScreen.Songs.Album> {
         AlbumSongs(
             playerViewModel = playerViewModel,
-            onSongClick = playSongExtra,
+            onNavigate = onNavigate,
             onBackClick = onBackClick,
-            onMenuClick = onMenuClick
         )
     }
     composable<NavScreen.Songs.Artist> {
         ArtistSongs(
             playerViewModel = playerViewModel,
-            onSongClick = playSongExtra,
+            onNavigate = onNavigate,
             onBackClick = onBackClick,
-            onMenuClick = onMenuClick
         )
     }
     composable<NavScreen.Songs.Playlist> {
         PlaylistSongs(
             playerViewModel = playerViewModel,
-            onSongClick = playSongExtra,
+            onNavigate = onNavigate,
             onBackClick = onBackClick,
-            onMenuClick = onMenuClick
         )
     }
 }

@@ -206,13 +206,8 @@ interface SongDao {
     @Query("""
         SELECT * FROM songs
         WHERE id IN (:songIds)
-        ORDER BY
-            CASE id
-                WHEN :songIds THEN 1
-                ELSE 2
-            END
     """)
-    fun getSongsWithAlbumAndArtistByIds(songIds: List<Long>): List<SongWithAlbumAndArtist>
+    fun getSongsDetailsWithLikeStatusByIds(songIds: List<Long>): Flow<List<SongDetailsWithLikeStatus>>
 
 
     
@@ -364,5 +359,9 @@ interface SongDao {
         sortBy: String,
         sortOrder: String // Pass the order as a string: "ASCENDING" or "DESCENDING"
     ): PagingSource<Int, SongWithAlbumAndArtist>
+
+    @Transaction
+    @Query("SELECT * FROM songs WHERE id = :songId LIMIT 1")
+    fun getSongDetailsWithLikeStatusById(songId: Long): Flow<SongDetailsWithLikeStatus?>
 }
 

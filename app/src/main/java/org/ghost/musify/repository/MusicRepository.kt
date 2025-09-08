@@ -155,6 +155,7 @@ class MusicRepository @Inject constructor(
                 // Add wildcard to match all files within the folder
                 selectionArgs.add("${folderPath.trimEnd('/')}/%")
             }
+
         }
 
         // 3. Add excluded folders filter if the list is not empty
@@ -741,8 +742,12 @@ class MusicRepository @Inject constructor(
         )
     }
 
-    suspend fun getSongsWithAlbumAndArtistByIds(songIds: List<Long>): List<SongWithAlbumAndArtist>{
-        return songDao.getSongsWithAlbumAndArtistByIds(songIds)
+    fun getSongsDetailsWithLikeStatusByIds(songIds: List<Long>): Flow<List<SongDetailsWithLikeStatus>> {
+        return songDao.getSongsDetailsWithLikeStatusByIds(songIds)
+    }
+
+    fun getSongDetailsWithLikeStatusById(songId: Long): Flow<SongDetailsWithLikeStatus?> {
+        return songDao.getSongDetailsWithLikeStatusById(songId)
     }
 
 

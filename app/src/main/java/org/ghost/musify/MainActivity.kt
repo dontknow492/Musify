@@ -44,7 +44,6 @@ import org.ghost.musify.viewModels.SettingsViewModel
 class MainActivity : ComponentActivity() {
     lateinit var navController: NavHostController
     private val mainViewModel: MainViewModel by viewModels()
-    private val playerViewModel: PlayerViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -73,7 +72,6 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     viewModel = mainViewModel,
                     startDestination = startDestination,
-                    playerViewModel = playerViewModel
                 )
             }
         }
