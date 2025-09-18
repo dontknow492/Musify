@@ -1,6 +1,12 @@
 package org.ghost.musify.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -74,7 +80,19 @@ fun MyBottomAppBar(
     val uiState by playerViewModel.uiState.collectAsState()
 //    BottomAppBar {
     Column {
-        AnimatedVisibility(uiState.currentSong != null) {
+        AnimatedVisibility(
+            uiState.currentSong != null,
+            enter = slideInVertically(
+                // Animate in from the bottom of the container
+                initialOffsetY = { fullHeight -> fullHeight },
+                animationSpec = tween(durationMillis = 300)
+            ) + fadeIn(animationSpec = tween(durationMillis = 150)),
+            exit = slideOutVertically(
+                // Animate out towards the bottom of the container
+                targetOffsetY = { fullHeight -> fullHeight },
+                animationSpec = tween(durationMillis = 300)
+            ) + fadeOut(animationSpec = tween(durationMillis = 150))
+        ) {
             Column {
                 BottomPlayer(
                     modifier = modifier.clip(
@@ -85,12 +103,8 @@ fun MyBottomAppBar(
                     ),
                     playerUiState = uiState,
                     onClick = onPlayerClick,
-                    onPlayPauseClick = {
-                        playerViewModel.onPlayPauseClicked()
-                    },
-                    onCloseCLick = {
-
-                    }
+                    onPlayPauseClick = playerViewModel::onPlayPauseClicked,
+                    onCloseCLick = playerViewModel::clearQueue
                 )
                 HorizontalDivider()
             }
@@ -115,10 +129,8 @@ fun PlayerBottomAppBar(
             BottomPlayer(
                 playerUiState = uiState,
                 onClick = onClick,
-                onPlayPauseClick = {
-                    playerViewModel.onPlayPauseClicked()
-                },
-                onCloseCLick = { }
+                onPlayPauseClick = playerViewModel::onPlayPauseClicked,
+                onCloseCLick = playerViewModel::clearQueue
             )
         }
     }

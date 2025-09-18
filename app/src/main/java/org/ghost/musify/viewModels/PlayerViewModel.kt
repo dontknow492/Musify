@@ -439,6 +439,15 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun clearQueue() {
+        viewModelScope.launch {
+            mediaController?.let{controller ->
+                controller.clearMediaItems()
+                Log.d("PlayerViewModel", "Queue cleared.")
+            }
+        }
+    }
+
 
     fun seekToSong(songId: Long) {
         viewModelScope.launch {

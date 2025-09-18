@@ -198,6 +198,14 @@ fun PlayerWindow(
 
 }
 
+@Composable
+fun HorizontalPagerPlayerItem(
+    modifier: Modifier = Modifier,
+    songDetail: SongDetailsWithLikeStatus,
+) {
+
+}
+
 
 
 

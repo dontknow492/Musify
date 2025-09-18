@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import okhttp3.internal.wait
 import org.ghost.musify.data.PlayerSettings
 import org.ghost.musify.data.QueueState
 import org.ghost.musify.enums.AudioFocus
@@ -75,37 +77,41 @@ class MusicService : MediaSessionService() {
 
     // Release resources when the service is destroyed
     override fun onDestroy() {
-        Log.d("MusicService", "Service Destroyed")
+        Log.d("MusicService", "Service Destroying")
 
-        saveQueue()
+        // runBlocking will start a coroutine and block the current thread
+        // until the coroutine inside it (saveQueue) is complete.
+        runBlocking {
+            saveQueue()
+        }
 
         mediaSession?.run {
             player.release()
             release()
             mediaSession = null
         }
-        // Cancel all coroutines started in this scope
-        serviceScope.cancel() // <-- Add this line
+        // Now, cancel any other remaining coroutines
+        serviceScope.cancel()
         super.onDestroy()
+        Log.d("MusicService", "Service Destroyed")
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        // Log that the method was called, this is crucial for debugging
         Log.d("MusicService", "onTaskRemoved called.")
 
-        // A better check is 'playWhenReady'. It reflects the user's intent.
-        // 'isPlaying' can be false during buffering, but the user still expects it to play.
-        val isPlaying = exoPlayer.playWhenReady
-
-        Log.d("MusicService", "Is player supposed to be playing? $isPlaying")
-
-        if (!isPlaying) {
-            Log.d("MusicService", "Player is not playing, stopping service.")
-            stopSelf() // This will trigger onDestroy()
+        // Check if the player exists and is NOT playing
+        if (exoPlayer == null || !exoPlayer.isPlaying) {
+            // If music is paused or stopped, it's safe to stop the service.
+            // This will trigger onDestroy(), where your queue saving logic is.
+            Log.d("MusicService", "Player is not active. Stopping service.")
+            stopSelf()
         } else {
-            Log.d("MusicService", "Player is playing, service will continue.")
+            // If music is actively playing, do nothing.
+            // The service should continue running in the foreground.
+            Log.d("MusicService", "Player is active. Not stopping service.")
         }
 
+        // You must call super.onTaskRemoved() at the end.
         super.onTaskRemoved(rootIntent)
     }
 
@@ -181,29 +187,22 @@ class MusicService : MediaSessionService() {
     }
 
 
-    private fun saveQueue() {
+    private suspend fun saveQueue() {
         Log.d("MusicService", "Saving queue state.")
-        // Don't save if there's nothing to save.
         if (exoPlayer.mediaItemCount == 0) return
 
-        // 1. Get the list of song IDs from the current player queue.
-        //    (Assumes you've set the song ID in the MediaItem's mediaId field).
         val songIds = (0 until exoPlayer.mediaItemCount).map {
             exoPlayer.getMediaItemAt(it).mediaId.toLong()
         }
-
-        // 2. Create a QueueState object with the current player state.
         val currentState = QueueState(
             songIds = songIds,
             currentTrackIndex = exoPlayer.currentMediaItemIndex,
             playbackPosition = exoPlayer.currentPosition
         )
 
-        // 3. Launch a coroutine to save the state via the repository.
-        serviceScope.launch {
-            queueRepository.saveQueueState(currentState)
-            Log.d("MusicService", "Queue state saved.")
-        }
+        // Directly call the suspend function. The caller will provide the scope.
+        queueRepository.saveQueueState(currentState)
+        Log.d("MusicService", "Queue state saved.")
     }
 
 }
