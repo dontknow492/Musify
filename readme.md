@@ -10,7 +10,7 @@ Musify is a feature-rich music player designed to scan, organize, and play audio
 
 | **Screenshot 1: Home Screen**         | **Screenshot 2: Music Library**           | **Screenshot 3: Playback Controls**                 |
 |---------------------------------------|-------------------------------------------|-----------------------------------------------------|
-| ![Home Screen](preview/dark/home.png) | ![Music Library](preview/dark/search.png) | ![Playback Controls](preview/playback-controls.png) |
+| ![Home Screen](preview/dark/home.png) | ![Music Library](preview/dark/search.png) | ![Playback Controls](preview/playback_controls.png) |
 
 
 ## **✨ Features**
