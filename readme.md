@@ -6,6 +6,13 @@ A modern, offline-first local music player for Android built entirely with Jetpa
 
 Musify is a feature-rich music player designed to scan, organize, and play audio files stored locally on an Android device. It provides a fluid user experience with dynamic theming, robust playback controls, and powerful library management features. The app is built with a focus on performance and a clean, scalable architecture, making it a solid foundation for a fully-fledged music application.
 
+## App Preview
+
+| **Screenshot 1: Home Screen**         | **Screenshot 2: Music Library**           | **Screenshot 3: Playback Controls**                 |
+|---------------------------------------|-------------------------------------------|-----------------------------------------------------|
+| ![Home Screen](preview/dark/home.png) | ![Music Library](preview/dark/search.png) | ![Playback Controls](preview/playback-controls.png) |
+
+
 ## **✨ Features**
 
 * **Local Media Scanning:** Automatically scans the device's MediaStore to find and import all music files.
